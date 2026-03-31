@@ -538,18 +538,29 @@ function gridUsed(r,c){return occGrid[r][c]!==-1}
 function adjPts(r,c){const a=[];for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<GRID_SIZE&&nc>=0&&nc<GRID_SIZE&&isInShape(nr,nc))a.push([nr,nc])}return a}
 
 function genArrowPath(existing,targetLen,preferCenter){
-    for(let att=0;att<100;att++){
+    const wantLong=targetLen>=10;
+    for(let att=0;att<150;att++){
         let sr,sc;
         if(preferCenter){const cr=Math.floor(GRID_SIZE/2),cc=Math.floor(GRID_SIZE/2),off=Math.floor(GRID_SIZE/4);sr=Math.max(0,Math.min(GRID_SIZE-1,cr+Math.floor(rng()*off*2)-off));sc=Math.max(0,Math.min(GRID_SIZE-1,cc+Math.floor(rng()*off*2)-off))}else{sr=Math.floor(rng()*GRID_SIZE);sc=Math.floor(rng()*GRID_SIZE)}
         if(gridUsed(sr,sc)||!isInShape(sr,sc))continue;
-        const path=[[sr,sc]];const inPath=new Set([sr*GRID_SIZE+sc]);let curR=sr,curC=sc,lastDir=null;
+        const path=[[sr,sc]];const inPath=new Set([sr*GRID_SIZE+sc]);let curR=sr,curC=sc,lastDr=0,lastDc=0;
         while(path.length<targetLen){
             const avail=adjPts(curR,curC).filter(([r,c])=>!gridUsed(r,c)&&!inPath.has(r*GRID_SIZE+c));
             if(!avail.length)break;
-            const scored=avail.map(([r,c])=>{let s=rng();if(lastDir&&`${r-curR},${c-curC}`!==lastDir)s+=1.5;if(adjPts(r,c).some(([nr,nc])=>gridUsed(nr,nc)))s+=1;return{pt:[r,c],s}});
-            scored.sort((a,b)=>b.s-a.s);const top=scored.slice(0,Math.max(1,Math.ceil(scored.length*.4)));const ch=top[Math.floor(rng()*top.length)];
+            const scored=avail.map(([r,c])=>{
+                const dr=r-curR,dc=c-curC;
+                let s=rng()*0.5;
+                if(lastDr===dr&&lastDc===dc)s+=wantLong?3:1;
+                else if(lastDr||lastDc)s+=wantLong?0.5:1.5;
+                const freeNeighbors=adjPts(r,c).filter(([nr,nc])=>!gridUsed(nr,nc)&&!inPath.has(nr*GRID_SIZE+nc)).length;
+                s+=freeNeighbors*0.4;
+                return{pt:[r,c],s};
+            });
+            scored.sort((a,b)=>b.s-a.s);
+            const top=scored.slice(0,Math.max(1,Math.ceil(scored.length*(wantLong?.6:.4))));
+            const ch=top[Math.floor(rng()*top.length)];
             path.push(ch.pt);inPath.add(ch.pt[0]*GRID_SIZE+ch.pt[1]);
-            lastDir=`${ch.pt[0]-curR},${ch.pt[1]-curC}`;curR=ch.pt[0];curC=ch.pt[1];
+            lastDr=ch.pt[0]-curR;lastDc=ch.pt[1]-curC;curR=ch.pt[0];curC=ch.pt[1];
         }
         if(path.length>=2&&!selfBlocks(path))return path;
     }
