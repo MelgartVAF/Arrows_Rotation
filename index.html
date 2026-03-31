@@ -1469,13 +1469,19 @@ function checkBdaySurprise(){
         showBday();
     }
 }
+let bdayCanClose=false;
 function showBday(){
+    bdayCanClose=false;
     document.getElementById('bdayName').textContent=BIRTHDAY_NAME;
     document.getElementById('bdayMsg').textContent=BIRTHDAY_MESSAGE;
     document.getElementById('bdayModal').classList.add('active');
+    document.querySelector('.bday-close').style.opacity='0.3';
+    document.querySelector('.bday-close').style.pointerEvents='none';
     startConfetti();
+    setTimeout(()=>{bdayCanClose=true;document.querySelector('.bday-close').style.opacity='';document.querySelector('.bday-close').style.pointerEvents=''},10000);
 }
 function closeBday(){
+    if(!bdayCanClose)return;
     document.getElementById('bdayModal').classList.remove('active');
     stopConfetti();
 }
