@@ -634,21 +634,20 @@ function genDistributed(n){
     while(arrows.length<n&&fails<maxFails){
         const fillRatio=arrows.length/Math.max(1,n);
         let tl;
-        if(fails>100){tl=2+Math.floor(rng()*2)} // desperate: tiny (2-3)
-        else if(fillRatio>.7){tl=2+Math.floor(rng()*3)} // nearly full: 2-4
+        if(fails>100){tl=3+Math.floor(rng()*4)} // desperate: short (3-6)
+        else if(fillRatio>.7){tl=3+Math.floor(rng()*5)} // nearly full: 3-7
         else if(dense){
-            // Dense packing: mostly short arrows
             const roll=rng();
-            if(roll<.35){tl=2+Math.floor(rng()*2)}       // 35% tiny (2-3)
-            else if(roll<.70){tl=3+Math.floor(rng()*4)}   // 35% short (3-6)
-            else if(roll<.90){tl=5+Math.floor(rng()*5)}   // 20% medium (5-9)
-            else{tl=8+Math.floor(rng()*6)}                 // 10% longer (8-13)
+            if(roll<.15){tl=3+Math.floor(rng()*3)}        // 15% short (3-5)
+            else if(roll<.45){tl=6+Math.floor(rng()*6)}   // 30% medium (6-11)
+            else if(roll<.75){tl=10+Math.floor(rng()*8)}  // 30% long (10-17)
+            else{tl=15+Math.floor(rng()*10)}               // 25% extra long (15-24)
         }else{
             const roll=rng();
-            if(roll<.15){tl=2+Math.floor(rng()*3)}
-            else if(roll<.45){tl=5+Math.floor(rng()*6)}
-            else if(roll<.75){tl=10+Math.floor(rng()*10)}
-            else{tl=18+Math.floor(rng()*15)}
+            if(roll<.10){tl=3+Math.floor(rng()*3)}        // 10% short (3-5)
+            else if(roll<.30){tl=6+Math.floor(rng()*6)}   // 20% medium (6-11)
+            else if(roll<.60){tl=12+Math.floor(rng()*12)} // 30% long (12-23)
+            else{tl=20+Math.floor(rng()*15)}               // 40% extra long (20-34)
         }
         tl=Math.min(tl,MAX_ARROW_LENGTH);
         const p=genArrowPath(arrows,tl,false);
@@ -1241,7 +1240,8 @@ function startDaily(dateStr){
     GRID_SIZE=dc.gridSize;MIN_ARROWS=dc.minArrows;MAX_ARROWS=dc.maxArrows;MIN_ARROW_LENGTH=dc.minLength;MAX_ARROW_LENGTH=dc.maxLength;
     rng=mulberry32(dateToSeed(dateStr+'_puzzle_v5'));
     // Birthday override: heart-shaped puzzle
-    const dailyShape=isBirthday()&&dateStr===todayStr()?BIRTHDAY_SHAPE:dc.shape;
+    isBdayPuzzle=dateMatchesBirthday(dateStr);
+    const dailyShape=isBdayPuzzle?BIRTHDAY_SHAPE:dc.shape;
     shapeGrid=genShape(dailyShape,GRID_SIZE,rng);
     bdayTriggered=false;
     document.getElementById('gameTitle').textContent='Daily · '+fmtDateShort(dateStr);
@@ -1450,19 +1450,13 @@ const BIRTHDAY_NAME='Elena Anne';
 const BIRTHDAY_MESSAGE='Wishing you the most amazing day! 🎉💕';
 const BIRTHDAY_SHAPE='heart'; // puzzle shape on birthday
 
-let bdayTriggered=false,bdayConfettiParts=[];
-function isBirthday(){
-    const d=new Date();
-    const mmdd=String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    return mmdd===BIRTHDAY_DATE;
-}
-function getBdayDailyOverride(){
-    // Override daily config on birthday: heart shape, medium difficulty
-    return{shape:BIRTHDAY_SHAPE};
+let bdayTriggered=false,bdayConfettiParts=[],isBdayPuzzle=false;
+function dateMatchesBirthday(dateStr){
+    if(!dateStr)return false;
+    return dateStr.slice(5)===BIRTHDAY_DATE;
 }
 function checkBdaySurprise(){
-    if(!isBirthday()||bdayTriggered)return;
-    // Trigger at ~50% completion
+    if(!isBdayPuzzle||bdayTriggered)return;
     const remaining=testArrows.filter(a=>!a.isAnimating).length;
     if(totalArrows>0&&remaining<=Math.floor(totalArrows*0.5)){
         bdayTriggered=true;
