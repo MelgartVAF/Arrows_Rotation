@@ -257,8 +257,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="bday-bg" id="bdayModal">
 <div class="bday-modal">
     <div class="bday-emoji">💍</div>
-    <h1 id="bdayName">Elena Anne</h1>
-    <p id="bdayMsg">Will you marry me? 💕</p>
+    <h1 id="bdayMsg">Will you marry me? 💕</h1>
     <button class="bday-close" onclick="closeBday()">Yes! 💍</button>
 </div>
 </div>
@@ -1476,7 +1475,6 @@ function checkBdaySurprise(){
 let bdayCanClose=false;
 function showBday(){
     bdayCanClose=false;
-    document.getElementById('bdayName').textContent=BIRTHDAY_NAME;
     document.getElementById('bdayMsg').textContent=BIRTHDAY_MESSAGE;
     document.getElementById('bdayModal').classList.add('active');
     document.querySelector('.bday-close').style.opacity='0.3';
