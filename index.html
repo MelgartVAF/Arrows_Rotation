@@ -253,14 +253,13 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 </div>
 
-<!-- ==================== BIRTHDAY SURPRISE ==================== -->
+<!-- ==================== PROPOSAL SURPRISE ==================== -->
 <div class="bday-bg" id="bdayModal">
 <div class="bday-modal">
-    <div class="bday-emoji">🎂</div>
-    <h1>Happy Birthday!</h1>
-    <div class="bday-name" id="bdayName">Elena Anne</div>
-    <p id="bdayMsg">Wishing you the most amazing day! 🎉💕</p>
-    <button class="bday-close" onclick="closeBday()">Thank you! 🥳</button>
+    <div class="bday-emoji">💍</div>
+    <h1 id="bdayName">Elena Anne</h1>
+    <p id="bdayMsg">Will you marry me? 💕</p>
+    <button class="bday-close" onclick="closeBday()">Yes! 💍</button>
 </div>
 </div>
 <canvas class="confetti-canvas" id="confettiCanvas"></canvas>
@@ -1458,7 +1457,7 @@ if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch((
 // ================================================================
 const BIRTHDAY_DATE='03-30'; // MM-DD format
 const BIRTHDAY_NAME='Elena Anne';
-const BIRTHDAY_MESSAGE='Wishing you the most amazing day! 🎉💕';
+const BIRTHDAY_MESSAGE='Will you marry me? 💕';
 const BIRTHDAY_SHAPE='heart'; // puzzle shape on birthday
 
 let bdayTriggered=false,bdayConfettiParts=[],isBdayPuzzle=false;
@@ -1469,7 +1468,7 @@ function dateMatchesBirthday(dateStr){
 function checkBdaySurprise(){
     if(!isBdayPuzzle||bdayTriggered)return;
     const remaining=testArrows.filter(a=>!a.isAnimating).length;
-    if(totalArrows>0&&remaining<=Math.floor(totalArrows*0.5)){
+    if(totalArrows>0&&remaining<=Math.floor(totalArrows*0.75)){
         bdayTriggered=true;
         showBday();
     }
@@ -1498,7 +1497,7 @@ function startConfetti(){
     c.style.display='block';
     const ctx2=c.getContext('2d');
     bdayConfettiParts=[];
-    const emojis=['❤️','💕','💖','💗','💘','💝','💍','💎','💍','❤️','💕','💖'];
+    const emojis=['💍','💎','❤️','💕','💖','💗','💘','💝','✨','🥂','💍','💎'];
     for(let i=0;i<120;i++){
         bdayConfettiParts.push({
             x:Math.random()*c.width,y:Math.random()*c.height-c.height,
