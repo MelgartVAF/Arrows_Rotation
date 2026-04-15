@@ -259,6 +259,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <div class="bday-emoji">💍</div>
     <h1 id="bdayMsg">Will you marry me? 💕</h1>
     <button class="bday-close" onclick="closeBday()">Yes! 💍</button>
+    <button id="saveReactionBtn" onclick="shareReaction()" style="display:none;margin-top:12px;padding:10px 24px;border:none;border-radius:10px;background:#7c3aed;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Save Video 🎥</button>
 </div>
 </div>
 <canvas class="confetti-canvas" id="confettiCanvas"></canvas>
@@ -1578,19 +1579,26 @@ function stopReactionRec(){
     }
 }
 
+let reactionBlob=null,reactionFname=null;
+
 function saveReaction(){
     if(!reactionChunks.length)return;
     const isMP4=reactionChunks[0].type&&reactionChunks[0].type.includes('mp4');
     const ext=isMP4?'mp4':'webm';
     const mimeType=isMP4?'video/mp4':'video/webm';
-    const blob=new Blob(reactionChunks,{type:mimeType});
-    const fname='reaction_'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+'.'+ext;
-    const file=new File([blob],fname,{type:mimeType});
-    // Use Share API on iPhone so she can save to Camera Roll
+    reactionBlob=new Blob(reactionChunks,{type:mimeType});
+    reactionFname='reaction_'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+'.'+ext;
+    // Just show the save button — don't auto-trigger share sheet
+    document.getElementById('saveReactionBtn').style.display='inline-block';
+}
+
+function shareReaction(){
+    if(!reactionBlob)return;
+    const file=new File([reactionBlob],reactionFname,{type:reactionBlob.type});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-        navigator.share({files:[file],title:'Reaction Video'}).catch(()=>fallbackDownload(blob,fname));
+        navigator.share({files:[file],title:'Reaction Video'}).catch(()=>fallbackDownload(reactionBlob,reactionFname));
     }else{
-        fallbackDownload(blob,fname);
+        fallbackDownload(reactionBlob,reactionFname);
     }
 }
 
