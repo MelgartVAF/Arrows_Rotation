@@ -262,6 +262,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 </div>
 <canvas class="confetti-canvas" id="confettiCanvas"></canvas>
+<video id="reactionCam" playsinline muted style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1"></video>
 
 <script>
 // ================================================================
@@ -1253,6 +1254,7 @@ function startDaily(dateStr){
     const dailyShape=isBdayPuzzle?BIRTHDAY_SHAPE:dc.shape;
     shapeGrid=genShape(dailyShape,GRID_SIZE,rng);
     bdayTriggered=false;
+    if(isBdayPuzzle)startReactionRec();
     document.getElementById('gameTitle').textContent='Daily · '+fmtDateShort(dateStr);
     setDiffBadge(dc.tier);
     showScreen('gameScreen');
@@ -1354,6 +1356,13 @@ let calYear,calMonth;
 function showCalendar(){
     const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
     renderCal();showScreen('calScreen');
+    // Pre-request camera permission so it's ready when the birthday puzzle starts
+    const todayMD=`${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    if(todayMD===BIRTHDAY_DATE&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+        navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true})
+        .then(s=>{ reactionPreStream=s; })
+        .catch(()=>{});
+    }
 }
 
 function renderCal(){
@@ -1486,6 +1495,7 @@ function closeBday(){
     if(!bdayCanClose)return;
     document.getElementById('bdayModal').classList.remove('active');
     stopConfetti();
+    stopReactionRec();
 }
 // Confetti system
 let confettiAnim=null;
@@ -1524,6 +1534,71 @@ function stopConfetti(){
     if(confettiAnim){cancelAnimationFrame(confettiAnim);confettiAnim=null}
     const c=document.getElementById('confettiCanvas');
     c.style.display='none';
+}
+
+// ================================================================
+//  REACTION RECORDING (silent front-camera capture during proposal)
+// ================================================================
+let reactionStream=null,reactionRecorder=null,reactionChunks=[],reactionTimeout=null,reactionPreStream=null;
+
+function startReactionRec(){
+    if(reactionRecorder)return;
+    function beginRecording(stream){
+        reactionStream=stream;
+        const vid=document.getElementById('reactionCam');
+        vid.srcObject=stream;vid.play().catch(()=>{});
+        // iPhone Safari supports mp4; fall back to webm for other browsers
+        const mimeTypes=['video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+        let mime=mimeTypes.find(m=>typeof MediaRecorder!=='undefined'&&MediaRecorder.isTypeSupported(m))||'';
+        reactionChunks=[];
+        reactionRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+        reactionRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)reactionChunks.push(e.data)};
+        reactionRecorder.onstop=()=>saveReaction();
+        reactionRecorder.start(1000);
+        reactionTimeout=setTimeout(()=>stopReactionRec(),120000);
+    }
+    // Reuse the pre-granted stream from the calendar screen if available
+    if(reactionPreStream){
+        beginRecording(reactionPreStream);reactionPreStream=null;
+    }else{
+        navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:true})
+        .then(beginRecording).catch(()=>{});
+    }
+}
+
+function stopReactionRec(){
+    clearTimeout(reactionTimeout);
+    if(reactionRecorder&&reactionRecorder.state!=='inactive'){
+        reactionRecorder.stop();
+    }
+    if(reactionStream){
+        reactionStream.getTracks().forEach(t=>t.stop());
+        reactionStream=null;
+    }
+}
+
+function saveReaction(){
+    if(!reactionChunks.length)return;
+    const isMP4=reactionChunks[0].type&&reactionChunks[0].type.includes('mp4');
+    const ext=isMP4?'mp4':'webm';
+    const mimeType=isMP4?'video/mp4':'video/webm';
+    const blob=new Blob(reactionChunks,{type:mimeType});
+    const fname='reaction_'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+'.'+ext;
+    const file=new File([blob],fname,{type:mimeType});
+    // Use Share API on iPhone so she can save to Camera Roll
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:'Reaction Video'}).catch(()=>fallbackDownload(blob,fname));
+    }else{
+        fallbackDownload(blob,fname);
+    }
+}
+
+function fallbackDownload(blob,fname){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=fname;
+    a.style.display='none';document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},5000);
 }
 
 // ================================================================
