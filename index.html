@@ -278,7 +278,7 @@ let rng=Math.random;
 //  SCREENS
 // ================================================================
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
-function goHome(){showScreen('homeScreen');updateHomeStats()}
+function goHome(){document.getElementById('bdayModal').classList.remove('active');stopConfetti();showScreen('homeScreen');updateHomeStats()}
 function toggleModal(id){document.getElementById(id).classList.toggle('active')}
 
 // ================================================================
@@ -1496,9 +1496,14 @@ function closeBday(){
     if(!bdayCanClose)return;
     document.getElementById('bdayModal').classList.remove('active');
     stopConfetti();
-    // Stop recording and auto-share once the blob is ready
     reactionAutoShare=true;
-    stopReactionRec();
+    if(reactionBlob){
+        // Recording already auto-stopped — share the saved video now
+        shareReaction();
+    }else{
+        // Still recording — stop it, saveReaction will auto-share
+        stopReactionRec();
+    }
 }
 // Confetti system
 let confettiAnim=null;
@@ -1559,7 +1564,7 @@ function startReactionRec(){
         reactionRecorder.onstop=()=>saveReaction();
         // No timeslice — single blob on stop gives iOS correct duration metadata
         reactionRecorder.start();
-        reactionTimeout=setTimeout(()=>stopReactionRec(),120000);
+        reactionTimeout=setTimeout(()=>stopReactionRec(),420000);
     }
     // Reuse the pre-granted stream from the calendar screen if available
     if(reactionPreStream){
