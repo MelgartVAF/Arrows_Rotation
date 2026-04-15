@@ -1554,7 +1554,8 @@ function startReactionRec(){
         reactionRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
         reactionRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)reactionChunks.push(e.data)};
         reactionRecorder.onstop=()=>saveReaction();
-        reactionRecorder.start(1000);
+        // No timeslice — single blob on stop gives iOS correct duration metadata
+        reactionRecorder.start();
         reactionTimeout=setTimeout(()=>stopReactionRec(),120000);
     }
     // Reuse the pre-granted stream from the calendar screen if available
