@@ -1357,13 +1357,6 @@ let calYear,calMonth;
 function showCalendar(){
     const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
     renderCal();showScreen('calScreen');
-    // Pre-request camera permission so it's ready when the birthday puzzle starts
-    const todayMD=`${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    if(todayMD===BIRTHDAY_DATE&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
-        navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true})
-        .then(s=>{ reactionPreStream=s; })
-        .catch(()=>{});
-    }
 }
 
 function renderCal(){
@@ -1595,12 +1588,11 @@ function saveReaction(){
     const mimeType=isMP4?'video/mp4':'video/webm';
     reactionBlob=new Blob(reactionChunks,{type:mimeType});
     reactionFname='reaction_'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+'.'+ext;
+    // Always show the button as a fallback in case the share sheet is dismissed
+    document.getElementById('saveReactionBtn').style.display='inline-block';
     if(reactionAutoShare){
         // "Yes!" was clicked — auto open share sheet
         shareReaction();
-    }else{
-        // Auto-timeout — just show the button for later
-        document.getElementById('saveReactionBtn').style.display='inline-block';
     }
 }
 
@@ -1627,6 +1619,20 @@ function fallbackDownload(blob,fname){
 // ================================================================
 GRID_SIZE=16;CELL_SIZE=1;shapeGrid=genShape('none',GRID_SIZE);resizeCanvas();
 updateHomeStats();
+
+// One-time camera permission request on first app open
+// iOS PWAs (home screen apps) persist this permission across launches
+(function requestCameraOnce(){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return;
+    if(localStorage.getItem('arrows_cam_granted')==='1')return;
+    // Request immediately so the iOS prompt appears as soon as the app opens
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true})
+    .then(s=>{
+        s.getTracks().forEach(t=>t.stop());
+        localStorage.setItem('arrows_cam_granted','1');
+    })
+    .catch(()=>{});
+})();
 </script>
 </body>
 </html>
