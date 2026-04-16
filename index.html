@@ -1620,19 +1620,14 @@ function fallbackDownload(blob,fname){
 GRID_SIZE=16;CELL_SIZE=1;shapeGrid=genShape('none',GRID_SIZE);resizeCanvas();
 updateHomeStats();
 
-// One-time camera permission request on first app open
-// iOS PWAs (home screen apps) persist this permission across launches
-(function requestCameraOnce(){
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return;
-    if(localStorage.getItem('arrows_cam_granted')==='1')return;
-    // Request immediately so the iOS prompt appears as soon as the app opens
-    navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true})
-    .then(s=>{
-        s.getTracks().forEach(t=>t.stop());
-        localStorage.setItem('arrows_cam_granted','1');
-    })
+// Request camera permission on app startup.
+// Keep the stream alive so startReactionRec can reuse it without re-prompting.
+if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:true})
+    .then(s=>{reactionPreStream=s})
     .catch(()=>{});
-})();
+}
+
 </script>
 </body>
 </html>
