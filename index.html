@@ -1141,7 +1141,7 @@ function fireArrow(idx){
         startExitAnim(idx);
     }else{
         if(!wrongArrows.has(a.id)){
-            lives--;if(lives<=0)gameOver=true;
+            if(!isBdayPuzzle){lives--;if(lives<=0)gameOver=true;} // invincible on special dates
             wrongArrows.add(a.id);
         }
         triggerShake();
@@ -1457,7 +1457,7 @@ if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch((
 //  BIRTHDAY SURPRISE
 //  ── CHANGE THESE TO SET DATE, NAME, AND MESSAGE ──
 // ================================================================
-const BIRTHDAY_DATE='03-30'; // MM-DD format
+const BIRTHDAY_DATES=['2026-03-30','2026-08-07','2026-08-08','2026-06-03']; // exact YYYY-MM-DD dates
 const BIRTHDAY_NAME='Elena Anne';
 const BIRTHDAY_MESSAGE='Will you marry me? 💕';
 const BIRTHDAY_SHAPE='heart'; // puzzle shape on birthday
@@ -1465,7 +1465,7 @@ const BIRTHDAY_SHAPE='heart'; // puzzle shape on birthday
 let bdayTriggered=false,bdayConfettiParts=[],isBdayPuzzle=false;
 function dateMatchesBirthday(dateStr){
     if(!dateStr)return false;
-    return dateStr.slice(5)===BIRTHDAY_DATE;
+    return BIRTHDAY_DATES.includes(dateStr);
 }
 function checkBdaySurprise(){
     if(!isBdayPuzzle||bdayTriggered)return;
