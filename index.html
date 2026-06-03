@@ -1196,13 +1196,14 @@ const ALL_SHAPES=['none','circle','diamond','heart','star','cross','triangle','r
 function getDailyConfig(dateStr){
     const seed=dateToSeed(dateStr+'_v8');const p=mulberry32(seed);
     const tierRoll=p();
+    const forceNightmare=dateMatchesBirthday(dateStr); // special dates always NIGHTMARE
     let targetArrows,gridSize,tier;
-    if(tierRoll<0.30){
+    if(!forceNightmare&&tierRoll<0.30){
         // HARD: 25-40 arrows
         targetArrows=25+Math.floor(p()*15);
         gridSize=14+Math.floor(p()*3)*2; // 14-18
         tier=0;
-    }else if(tierRoll<0.60){
+    }else if(!forceNightmare&&tierRoll<0.60){
         // SUPER HARD: 40-60 arrows
         targetArrows=40+Math.floor(p()*20);
         gridSize=18+Math.floor(p()*3)*2; // 18-22
