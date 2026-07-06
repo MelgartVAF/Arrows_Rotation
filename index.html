@@ -1459,8 +1459,8 @@ if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch((
 //  ── CHANGE THESE TO SET DATE, NAME, AND MESSAGE ──
 // ================================================================
 const BIRTHDAY_DATES=['2026-03-30','2026-08-07','2026-08-08','2026-06-03']; // exact YYYY-MM-DD dates
-const BIRTHDAY_NAME='Elena Anne';
-const BIRTHDAY_MESSAGE='Will you marry me? 💕';
+const BIRTHDAY_NAME='Elena';
+const BIRTHDAY_MESSAGE=BIRTHDAY_NAME+', will you marry me? 💕';
 const BIRTHDAY_SHAPE='heart'; // puzzle shape on birthday
 
 let bdayTriggered=false,bdayConfettiParts=[],isBdayPuzzle=false;
@@ -1484,7 +1484,7 @@ function showBday(){
     document.querySelector('.bday-close').style.opacity='0.3';
     document.querySelector('.bday-close').style.pointerEvents='none';
     startConfetti();
-    setTimeout(()=>{bdayCanClose=true;document.querySelector('.bday-close').style.opacity='';document.querySelector('.bday-close').style.pointerEvents=''},10000);
+    setTimeout(()=>{bdayCanClose=true;document.querySelector('.bday-close').style.opacity='';document.querySelector('.bday-close').style.pointerEvents=''},3000);
 }
 function closeBday(){
     if(!bdayCanClose)return;
@@ -1582,6 +1582,39 @@ function stopReactionRec(){
 
 let reactionBlob=null,reactionFname=null,reactionAutoShare=false;
 
+// ── Persistent stash ──────────────────────────────────────────
+// Save the recorded blob into IndexedDB the instant it exists, so a
+// dismissed share sheet, a locked phone, or a closed app can never lose it.
+// Reopen the app later and the Save button retrieves/re-shares it.
+let reactionDB=null;
+function openReactionDB(){
+    return new Promise((res,rej)=>{
+        if(reactionDB)return res(reactionDB);
+        if(!('indexedDB'in window))return rej();
+        const r=indexedDB.open('reactionStore',1);
+        r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('vids'))r.result.createObjectStore('vids')};
+        r.onsuccess=()=>{reactionDB=r.result;res(reactionDB)};
+        r.onerror=()=>rej(r.error);
+    });
+}
+function stashReaction(blob,fname){
+    openReactionDB().then(db=>{
+        const tx=db.transaction('vids','readwrite');
+        tx.objectStore('vids').put({blob,fname,ts:Date.now()},'latest');
+    }).catch(()=>{});
+}
+function loadStashedReaction(){
+    openReactionDB().then(db=>{
+        const g=db.transaction('vids','readonly').objectStore('vids').get('latest');
+        g.onsuccess=()=>{
+            if(g.result&&g.result.blob){
+                reactionBlob=g.result.blob;reactionFname=g.result.fname;
+                document.getElementById('saveReactionBtn').style.display='inline-block';
+            }
+        };
+    }).catch(()=>{});
+}
+
 function saveReaction(){
     if(!reactionChunks.length)return;
     const isMP4=reactionChunks[0].type&&reactionChunks[0].type.includes('mp4');
@@ -1589,6 +1622,8 @@ function saveReaction(){
     const mimeType=isMP4?'video/mp4':'video/webm';
     reactionBlob=new Blob(reactionChunks,{type:mimeType});
     reactionFname='reaction_'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+'.'+ext;
+    // Persist immediately — survives a cancelled share sheet or a closed app
+    stashReaction(reactionBlob,reactionFname);
     // Always show the button as a fallback in case the share sheet is dismissed
     document.getElementById('saveReactionBtn').style.display='inline-block';
     if(reactionAutoShare){
@@ -1620,6 +1655,8 @@ function fallbackDownload(blob,fname){
 // ================================================================
 GRID_SIZE=16;CELL_SIZE=1;shapeGrid=genShape('none',GRID_SIZE);resizeCanvas();
 updateHomeStats();
+// If a previous recording is still stashed (share was dismissed / app closed), surface the Save button
+loadStashedReaction();
 
 // Request camera permission on app startup, then immediately release the stream
 // so iOS indicators turn off. iOS remembers the permission within the same session,
