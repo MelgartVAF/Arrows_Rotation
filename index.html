@@ -1603,6 +1603,19 @@ function stashReaction(blob,fname){
         tx.objectStore('vids').put({blob,fname,ts:Date.now()},'latest');
     }).catch(()=>{});
 }
+// One-time cleanup: wipe any stale dev/test stashes (e.g. old reaction_partial clips)
+// left over from earlier code versions, then run `done`. Runs only once ever, so
+// genuine post-proposal recoveries still persist across future app opens.
+function purgeStaleStashOnce(done){
+    let ran=false;const finish=()=>{if(ran)return;ran=true;try{localStorage.setItem('reactionStashClean','1')}catch(e){}if(done)done()};
+    try{
+        if(localStorage.getItem('reactionStashClean')==='1'){if(done)done();return}
+        openReactionDB().then(db=>{
+            const req=db.transaction('vids','readwrite').objectStore('vids').clear();
+            req.onsuccess=finish;req.onerror=finish;
+        }).catch(finish);
+    }catch(e){finish()}
+}
 function loadStashedReaction(){
     openReactionDB().then(db=>{
         const g=db.transaction('vids','readonly').objectStore('vids').get('latest');
@@ -1655,8 +1668,8 @@ function fallbackDownload(blob,fname){
 // ================================================================
 GRID_SIZE=16;CELL_SIZE=1;shapeGrid=genShape('none',GRID_SIZE);resizeCanvas();
 updateHomeStats();
-// If a previous recording is still stashed (share was dismissed / app closed), surface the Save button
-loadStashedReaction();
+// One-time wipe of stale test leftovers, THEN surface any genuine stashed recording
+purgeStaleStashOnce(loadStashedReaction);
 // When the app comes back to the foreground (e.g. phone was unlocked mid-recording), re-check the stash so the Save button appears
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadStashedReaction()});
 
