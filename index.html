@@ -1552,7 +1552,8 @@ function startReactionRec(){
         // iPhone Safari supports mp4; fall back to webm for other browsers
         const mimeTypes=['video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
         let mime=mimeTypes.find(m=>typeof MediaRecorder!=='undefined'&&MediaRecorder.isTypeSupported(m))||'';
-        reactionChunks=[];
+        // Start this recording clean so closeBday() can tell a finished new clip from a stale one
+        reactionChunks=[];reactionBlob=null;reactionFname=null;reactionAutoShare=false;
         reactionRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
         reactionRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)reactionChunks.push(e.data)};
         reactionRecorder.onstop=()=>saveReaction();
@@ -1581,6 +1582,9 @@ function stopReactionRec(){
 }
 
 let reactionBlob=null,reactionFname=null,reactionAutoShare=false;
+// A previously stashed recording, loaded on startup for the Save button ONLY.
+// Kept separate from reactionBlob so an old clip can never be mistaken for the current session's fresh recording.
+let recoveryBlob=null,recoveryFname=null;
 
 // ── Persistent stash ──────────────────────────────────────────
 // Save the recorded blob into IndexedDB the instant it exists, so a
@@ -1621,7 +1625,7 @@ function loadStashedReaction(){
         const g=db.transaction('vids','readonly').objectStore('vids').get('latest');
         g.onsuccess=()=>{
             if(g.result&&g.result.blob){
-                reactionBlob=g.result.blob;reactionFname=g.result.fname;
+                recoveryBlob=g.result.blob;recoveryFname=g.result.fname;
                 document.getElementById('saveReactionBtn').style.display='inline-block';
             }
         };
@@ -1646,12 +1650,15 @@ function saveReaction(){
 }
 
 function shareReaction(){
-    if(!reactionBlob)return;
-    const file=new File([reactionBlob],reactionFname,{type:reactionBlob.type});
+    // Prefer this session's fresh recording; only fall back to a recovered stash if there's no new one
+    const blob=reactionBlob||recoveryBlob;
+    const fname=reactionBlob?reactionFname:recoveryFname;
+    if(!blob)return;
+    const file=new File([blob],fname,{type:blob.type});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-        navigator.share({files:[file],title:'Reaction Video'}).catch(()=>fallbackDownload(reactionBlob,reactionFname));
+        navigator.share({files:[file],title:'Reaction Video'}).catch(()=>fallbackDownload(blob,fname));
     }else{
-        fallbackDownload(reactionBlob,reactionFname);
+        fallbackDownload(blob,fname);
     }
 }
 
