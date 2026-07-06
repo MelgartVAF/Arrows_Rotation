@@ -1541,14 +1541,7 @@ function stopConfetti(){
 // ================================================================
 //  REACTION RECORDING (silent front-camera capture during proposal)
 // ================================================================
-let reactionStream=null,reactionRecorder=null,reactionChunks=[],reactionTimeout=null,reactionPreStream=null,reactionMime='',reactionStashCount=0;
-
-// Build a playable blob from whatever chunks have been captured so far (MediaRecorder output is fragmented, so partial chunks still form a valid file)
-function currentReactionBlob(){
-    if(!reactionChunks.length)return null;
-    const isMP4=(reactionMime||reactionChunks[0].type||'').includes('mp4');
-    return {blob:new Blob(reactionChunks,{type:isMP4?'video/mp4':'video/webm'}),ext:isMP4?'mp4':'webm'};
-}
+let reactionStream=null,reactionRecorder=null,reactionChunks=[],reactionTimeout=null,reactionPreStream=null;
 
 function startReactionRec(){
     if(reactionRecorder)return;
@@ -1559,24 +1552,12 @@ function startReactionRec(){
         // iPhone Safari supports mp4; fall back to webm for other browsers
         const mimeTypes=['video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
         let mime=mimeTypes.find(m=>typeof MediaRecorder!=='undefined'&&MediaRecorder.isTypeSupported(m))||'';
-        reactionMime=mime;
-        reactionChunks=[];reactionStashCount=0;
+        reactionChunks=[];
         reactionRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
-        reactionRecorder.ondataavailable=e=>{
-            if(e.data&&e.data.size>0){
-                reactionChunks.push(e.data);
-                // Persist partial footage every few seconds so a locked screen / crash / power-off can't wipe it
-                if((++reactionStashCount)%3===0){
-                    const c=currentReactionBlob();
-                    if(c)stashReaction(c.blob,'reaction_partial.'+c.ext);
-                }
-            }
-        };
+        reactionRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)reactionChunks.push(e.data)};
         reactionRecorder.onstop=()=>saveReaction();
-        // 1s timeslice flushes data continuously so nothing is lost if the screen turns off before .stop()
-        reactionRecorder.start(1000);
-        // If the phone locks, the camera track ends — finalize what we have
-        stream.getVideoTracks().forEach(t=>t.addEventListener('ended',()=>stopReactionRec()));
+        // No timeslice — single blob on stop gives iOS correct duration metadata (and avoids the periodic recording beep)
+        reactionRecorder.start();
         reactionTimeout=setTimeout(()=>stopReactionRec(),420000);
     }
     // Reuse the pre-granted stream from the calendar screen if available
