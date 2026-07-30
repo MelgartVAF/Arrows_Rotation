@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Arrows</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Arrows">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#fff;--text:#111;--dim:#999;--border:#e5e5e5;--accent:#111;--green:#22c55e;--red:#ef4444;--radius:12px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh;min-height:100dvh;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+
+/* ---- SCREENS ---- */
+.screen{display:none;flex-direction:column;align-items:center;min-height:100vh;min-height:100dvh}
+.screen.active{display:flex}
+
+/* ---- HOME ---- */
+.home{justify-content:center;gap:32px;padding:40px 24px}
+.home-title{font-size:48px;font-weight:800;letter-spacing:-2px}
+.home-sub{color:var(--dim);font-size:15px;margin-top:-20px}
+.home-cards{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px}
+.home-card{display:flex;align-items:center;gap:16px;padding:20px;border:2px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:border-color .15s,transform .1s;background:var(--bg)}
+.home-card:hover{border-color:var(--accent)}
+.home-card:active{transform:scale(.98)}
+.home-card .icon{font-size:28px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:#f5f5f5;border-radius:10px}
+.home-card .label{font-size:17px;font-weight:600}
+.home-card .desc{font-size:13px;color:var(--dim);margin-top:2px}
+.home-streak{font-size:14px;color:var(--dim);display:flex;align-items:center;gap:6px}
+.home-streak b{color:var(--text)}
+
+/* ---- TOP BAR ---- */
+.topbar{width:100%;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.topbar .back{width:36px;height:36px;border:2px solid var(--border);border-radius:10px;background:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text);transition:border-color .15s}
+.topbar .back:hover{border-color:var(--accent)}
+.topbar .title{font-size:16px;font-weight:700;flex:1}
+.topbar .info{font-size:13px;color:var(--dim)}
+
+/* ---- GAME ---- */
+.game-screen{padding-bottom:0;height:100vh;height:100dvh;overflow:hidden}
+.game-bar{width:100%;display:flex;align-items:center;padding:10px 14px;flex-shrink:0;position:relative}
+.progress-track{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--border)}
+.progress-fill{height:100%;background:#22c55e;transition:width .4s ease-out;border-radius:0 2px 2px 0}
+.bar-left{display:flex;gap:6px;flex:1;align-items:center}
+.bar-center{display:flex;flex-direction:column;align-items:center;gap:2px;flex:0 0 auto}
+.bar-right{display:flex;gap:6px;flex:1;align-items:center;justify-content:flex-end}
+.game-bar .bar-btn{width:38px;height:38px;border:2px solid var(--border);border-radius:12px;background:none;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;color:var(--text);font-family:inherit;flex-shrink:0;transition:border-color .15s,background .15s}
+.game-bar .bar-btn:hover{border-color:var(--accent)}
+.game-bar .bar-btn:active{background:#f0f0f0}
+.bar-title{font-size:13px;font-weight:600;color:var(--dim);white-space:nowrap}
+.diff-badge{font-size:14px;font-weight:800;letter-spacing:.5px}
+.diff-hard{color:#333}
+.diff-super{color:#db2777}
+.diff-nightmare{color:#dc2626}
+.lives{font-size:18px;display:flex;gap:1px}
+.lives .heart{transition:opacity .3s,transform .3s;display:inline-block}
+.lives .heart.lost{opacity:.15}
+.lives .heart.pulse{animation:heartPulse .4s ease-out}
+@keyframes heartPulse{0%{transform:scale(1)}30%{transform:scale(1.4)}100%{transform:scale(1)}}
+.arrow-count{font-size:12px;font-weight:600;color:var(--dim);flex-shrink:0;transition:transform .2s}
+.arrow-count.tick{animation:countTick .3s ease-out}
+@keyframes countTick{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.hint-btn{height:34px;padding:0 14px;border:2px solid var(--border);border-radius:10px;background:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--text);font-family:inherit;display:flex;align-items:center;gap:5px;transition:border-color .15s,background .15s}
+.hint-btn:hover{border-color:var(--accent)}
+.hint-btn:active{background:#f0f0f0}
+
+.canvas-wrap{position:relative;flex:1;overflow:hidden;min-height:0;display:flex;align-items:center;justify-content:center}
+#gameCanvas{display:block;cursor:grab;touch-action:none}
+#gameCanvas.grabbing{cursor:grabbing}
+
+/* ---- CALENDAR ---- */
+.cal-screen{padding-bottom:40px}
+.cal-month{width:100%;max-width:380px;padding:0 16px}
+.cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cal-nav button{width:36px;height:36px;border:1.5px solid var(--border);border-radius:10px;background:none;font-size:18px;cursor:pointer;color:var(--text)}
+.cal-nav button:disabled{opacity:.3;cursor:default}
+.cal-nav span{font-size:15px;font-weight:600}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal-grid .dh{font-size:11px;color:var(--dim);font-weight:600;padding:4px 0}
+.cal-grid .d{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;font-size:14px;cursor:pointer;position:relative;transition:background .1s;border:1.5px solid transparent}
+.cal-grid .d:hover{background:#f5f5f5}
+.cal-grid .d.empty{cursor:default;background:none}
+.cal-grid .d.future{opacity:.2;cursor:default}
+.cal-grid .d.today{border-color:var(--accent)}
+.cal-grid .d.done{background:#f0fdf4}
+.cal-grid .d.done::after{content:'✓';position:absolute;bottom:1px;right:3px;font-size:8px;color:var(--green);font-weight:700}
+.cal-grid .d .tm{font-size:7px;color:var(--dim);margin-top:-1px}
+
+/* ---- LEVELS ---- */
+.lvl-screen{padding-bottom:40px}
+.lvl-grid{width:100%;max-width:420px;padding:0 16px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.lvl-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:var(--radius);font-size:16px;font-weight:700;cursor:pointer;border:2px solid var(--border);transition:border-color .15s,transform .1s;position:relative}
+.lvl-cell:hover{border-color:var(--accent)}
+.lvl-cell:active{transform:scale(.95)}
+.lvl-cell.done{background:#f0fdf4;border-color:var(--green)}
+.lvl-cell.done::after{content:'✓';position:absolute;top:2px;right:4px;font-size:9px;color:var(--green);font-weight:700}
+.lvl-cell.current{border-color:var(--accent);background:#f5f5f5}
+.lvl-cell.locked{opacity:.25;cursor:default;pointer-events:none}
+.lvl-pages{display:flex;gap:8px;align-items:center;margin:16px 0}
+.lvl-pages button{padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);font-family:inherit}
+.lvl-pages button:disabled{opacity:.3;cursor:default}
+.lvl-pages span{font-size:13px;color:var(--dim)}
+
+/* ---- MODALS ---- */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s}
+.modal-bg.active{display:flex}
+.modal{background:var(--bg);border-radius:16px;padding:28px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto;position:relative;border:1.5px solid var(--border);animation:slideUp .2s}
+.modal h2{font-size:20px;margin-bottom:12px}
+.modal p,.modal li{color:#555;line-height:1.6;margin-bottom:6px;font-size:14px}
+.modal strong{color:var(--text)}
+.modal ol,.modal ul{margin-left:20px}
+.modal .close{position:absolute;top:10px;right:14px;font-size:24px;color:var(--dim);cursor:pointer;background:none;border:none}
+
+/* Share */
+.share-box{background:#f5f5f5;padding:16px;border-radius:var(--radius);margin:12px 0;font-size:15px}
+.share-box p{margin:4px 0;color:var(--text)}
+.share-btn{width:100%;padding:12px;border:2px solid var(--border);border-radius:var(--radius);background:none;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;font-family:inherit}
+.share-btn:hover{border-color:var(--accent);background:#f5f5f5}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ---- BIRTHDAY ---- */
+.bday-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center;padding:20px}
+.bday-bg.active{display:flex}
+.bday-modal{background:#fff;border-radius:24px;padding:40px 32px;max-width:380px;width:100%;text-align:center;animation:bdayPop .5s cubic-bezier(.17,.67,.29,1.3);position:relative;overflow:hidden}
+.bday-modal h1{font-size:32px;margin:12px 0 4px;font-weight:900}
+.bday-modal .bday-name{font-size:24px;color:#db2777;font-weight:800;margin-bottom:8px}
+.bday-modal .bday-emoji{font-size:64px;margin-bottom:4px}
+.bday-modal p{color:#666;font-size:15px;margin-top:8px}
+.bday-modal .bday-close{margin-top:20px;padding:12px 32px;border:none;border-radius:12px;background:#db2777;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+@keyframes bdayPop{0%{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.05) rotate(2deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+.confetti-canvas{position:fixed;inset:0;z-index:2001;pointer-events:none}
+@media(max-width:380px){.home-title{font-size:36px}.lvl-grid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+
+<!-- ==================== HOME ==================== -->
+<div class="screen home active" id="homeScreen">
+    <div class="home-title">Arrows</div>
+    <div class="home-sub">Remove every arrow. Think before you click.</div>
+    <div class="home-cards">
+        <div class="home-card" onclick="showCalendar()">
+            <div class="icon">📅</div>
+            <div><div class="label">Daily Challenge</div><div class="desc">A new puzzle every day</div></div>
+        </div>
+        <div class="home-card" onclick="showLevels()">
+            <div class="icon">🏔️</div>
+            <div><div class="label">Levels</div><div class="desc" id="lvlProgress">0 / 200 completed</div></div>
+        </div>
+        <div class="home-card" onclick="startFreePlay()">
+            <div class="icon">🔀</div>
+            <div><div class="label">Free Play</div><div class="desc">Random puzzle, no pressure</div></div>
+        </div>
+    </div>
+    <div class="home-streak" id="homeStreak"></div>
+    <button id="saveReactionBtn" onclick="shareReaction()" style="display:none;margin-top:16px;padding:12px 28px;border:none;border-radius:12px;background:#7c3aed;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Save Video 🎥</button>
+</div>
+
+<!-- ==================== CALENDAR ==================== -->
+<div class="screen cal-screen" id="calScreen">
+    <div class="topbar">
+        <button class="back" onclick="goHome()">←</button>
+        <div class="title">Daily Challenge</div>
+    </div>
+    <div class="cal-month" id="calMonth"></div>
+</div>
+
+<!-- ==================== LEVELS ==================== -->
+<div class="screen lvl-screen" id="lvlScreen">
+    <div class="topbar">
+        <button class="back" onclick="goHome()">←</button>
+        <div class="title">Levels</div>
+        <div class="info" id="lvlInfo"></div>
+    </div>
+    <div class="lvl-pages">
+        <button onclick="lvlPagePrev()" id="lvlPrevBtn">←</button>
+        <span id="lvlPageLabel">1-25</span>
+        <button onclick="lvlPageNext()" id="lvlNextBtn">→</button>
+    </div>
+    <div class="lvl-grid" id="lvlGrid"></div>
+</div>
+
+<!-- ==================== GAME ==================== -->
+<div class="screen game-screen" id="gameScreen">
+    <div class="game-bar">
+        <div class="bar-left">
+            <button class="bar-btn" onclick="exitGame()">←</button>
+            <button class="bar-btn" onclick="restartCurrent()" title="Restart">↺</button>
+        </div>
+        <div class="bar-center">
+            <div class="bar-title" id="gameTitle">Daily</div>
+            <span class="diff-badge" id="diffBadge"></span>
+            <div class="lives" id="livesDisplay"></div>
+        </div>
+        <div class="bar-right">
+            <button class="hint-btn" onclick="showHint()">💡 Hint</button>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+</div>
+
+<!-- ==================== HOW TO PLAY ==================== -->
+<div class="modal-bg" id="howModal" onclick="if(event.target===this)toggleModal('howModal')">
+<div class="modal">
+    <button class="close" onclick="toggleModal('howModal')">✕</button>
+    <h2>How to play</h2>
+    <ol>
+        <li><strong>Tap an arrow</strong> to send it flying in the direction it points.</li>
+        <li>It can only leave if <strong>nothing blocks</strong> its path to the edge.</li>
+        <li>Tapping a blocked arrow <strong>costs a life</strong>.</li>
+        <li>Clear all arrows to win. Every puzzle is solvable.</li>
+    </ol>
+    <p style="margin-top:12px"><strong>Tip:</strong> use Hint if you're stuck. Pinch or scroll to zoom on big puzzles.</p>
+</div>
+</div>
+
+<!-- ==================== WIN MODAL ==================== -->
+<div class="modal-bg" id="winModal" onclick="if(event.target===this)toggleModal('winModal')">
+<div class="modal" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">🎉</div>
+    <h2 id="winTitle" style="margin-bottom:4px">Solved!</h2>
+    <p id="winSub" style="color:var(--dim);margin-bottom:16px"></p>
+    <div class="share-box" id="winStats"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+        <button class="share-btn" onclick="nativeShare()" id="nativeShareBtn" style="background:var(--accent);color:#fff;border-color:var(--accent)">Share</button>
+        <button class="share-btn" onclick="copyResults()">Copy results</button>
+        <button class="share-btn" onclick="winNext()" id="winNextBtn">Next puzzle</button>
+        <button class="share-btn" onclick="toggleModal('winModal');goHome()" style="color:var(--dim)">Home</button>
+    </div>
+</div>
+</div>
+
+<!-- ==================== LOSE MODAL ==================== -->
+<div class="modal-bg" id="loseModal" onclick="if(event.target===this)toggleModal('loseModal')">
+<div class="modal" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">💔</div>
+    <h2 style="margin-bottom:4px">Out of lives</h2>
+    <p id="loseSub" style="color:var(--dim);margin-bottom:20px"></p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="share-btn" onclick="toggleModal('loseModal');restartCurrent()" style="background:var(--accent);color:#fff;border-color:var(--accent)">Try again</button>
+        <button class="share-btn" onclick="toggleModal('loseModal');goHome()" style="color:var(--dim)">Home</button>
+    </div>
+</div>
+</div>
+
+<!-- ==================== PROPOSAL SURPRISE ==================== -->
+<div class="bday-bg" id="bdayModal">
+<div class="bday-modal">
+    <div class="bday-emoji">💍</div>
+    <h1 id="bdayMsg">Will you marry me? 💕</h1>
+    <button class="bday-close" onclick="closeBday()">Yes! 💍</button>
+</div>
+</div>
+<canvas class="confetti-canvas" id="confettiCanvas"></canvas>
+<video id="reactionCam" playsinline muted style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1"></video>
+
+<script>
+// ================================================================
+//  SEEDED RNG
+// ================================================================
+function mulberry32(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function dateToSeed(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0}return h}
+function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+let rng=Math.random;
+
+// ================================================================
+//  SCREENS
+// ================================================================
+function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    // The render loop used to keep running forever after leaving the board,
+    // redrawing an invisible canvas every frame. Park it here instead.
+    if(id!=='gameScreen'&&animationFrameId){cancelAnimationFrame(animationFrameId);animationFrameId=null}
+    if(id==='gameScreen')ensureLoop();
+}
+function goHome(){document.getElementById('bdayModal').classList.remove('active');stopConfetti();showScreen('homeScreen');updateHomeStats()}
+function toggleModal(id){document.getElementById(id).classList.toggle('active')}
+
+// ================================================================
+//  CANVAS + VIEWPORT
+// ================================================================
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d',{alpha:false});
+let viewScale=1,viewX=0,viewY=0;
+const MIN_ZOOM=1,MAX_ZOOM=5;
+const TAU=Math.PI*2;
+// One clock for every animation/timing calculation in the render path.
+const nowMs=()=>performance.now();
+// Cached element lookups - these were re-queried on every single frame.
+const gameScreenEl=document.getElementById('gameScreen');
+const livesEl=document.getElementById('livesDisplay');
+const progressFillEl=document.getElementById('progressFill');
+function gameScreenActive(){return gameScreenEl.classList.contains('active')}
+
+function resizeCanvas(){
+    const barH=document.querySelector('.game-bar').offsetHeight||60;
+    const availW=window.innerWidth;
+    const availH=window.innerHeight-barH;
+    const dpr=window.devicePixelRatio||1;
+    // Big grids draw far more geometry per frame, so give them FEWER device
+    // pixels, not more - keeps the per-frame pixel cost roughly constant.
+    // (This was previously backwards: the heaviest boards got the highest res.)
+    const res=Math.min(dpr,GRID_SIZE>32?1.25:GRID_SIZE>24?1.5:2);
+    // Canvas fills full available area
+    canvas.width=Math.round(availW*res);
+    canvas.height=Math.round(availH*res);
+    canvas.style.width=availW+'px';
+    canvas.style.height=availH+'px';
+    // Cells sized to fit grid in the smaller dimension
+    CELL_SIZE=Math.min(canvas.width,canvas.height)*0.95/GRID_SIZE;
+    updateDrawSizes();
+    if(testArrows&&testArrows.length>0)render();
+}
+window.addEventListener('resize',()=>{if(document.getElementById('gameScreen').classList.contains('active'))resizeCanvas()});
+
+function zoomIn(){zoomAt(canvas.width/2,canvas.height/2,1.3)}
+function zoomOut(){zoomAt(canvas.width/2,canvas.height/2,1/1.3)}
+function zoomReset(){viewScale=1;viewX=0;viewY=0;render()}
+function zoomAt(cx,cy,f){const ns=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,viewScale*f));const rf=ns/viewScale;viewX=cx-rf*(cx-viewX);viewY=cy-rf*(cy-viewY);viewScale=ns;clampPan();render()}
+function clampPan(){
+    const w=canvas.width,h=canvas.height;
+    // Allow dragging up to 30% past each edge so users can bring edge arrows into view
+    const padX=w*0.3,padY=h*0.3;
+    viewX=Math.min(padX,Math.max(w-w*viewScale-padX,viewX));
+    viewY=Math.min(padY,Math.max(h-h*viewScale-padY,viewY));
+}
+function screenToCanvas(cx,cy){
+    const r=canvas.getBoundingClientRect();
+    const rx=canvas.width/r.width,ry=canvas.height/r.height;
+    // Undo pan+zoom
+    let x=((cx-r.left)*rx-viewX)/viewScale;
+    let y=((cy-r.top)*ry-viewY)/viewScale;
+    // Undo rotation around grid center
+    const gcx=gridOffsetX()+GRID_SIZE*CELL_SIZE/2;
+    const gcy=gridOffsetY()+GRID_SIZE*CELL_SIZE/2;
+    const cos=Math.cos(-puzzleRotation),sin=Math.sin(-puzzleRotation);
+    const dx=x-gcx,dy=y-gcy;
+    return{x:gcx+dx*cos-dy*sin,y:gcy+dx*sin+dy*cos};
+}
+
+// Wheel zoom
+canvas.addEventListener('wheel',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();zoomAt((e.clientX-r.left)*(canvas.width/r.width),(e.clientY-r.top)*(canvas.height/r.height),e.deltaY<0?1.15:1/1.15)},{passive:false});
+
+// Hold detection: hold shows path preview, release on arrow fires it
+const HOLD_MS=180;
+function startHold(cx,cy){
+    cancelHold();
+    holdFired=false;
+    holdTimer=setTimeout(()=>{
+        const{x,y}=screenToCanvas(cx,cy);
+        const idx=arrowAt(x,y);
+        if(idx!==-1&&!testArrows[idx].isAnimating){
+            heldArrowId=testArrows[idx].id;
+            holdFired=true;
+            render();
+        }
+    },HOLD_MS);
+}
+function cancelHold(){
+    if(holdTimer){clearTimeout(holdTimer);holdTimer=null}
+    if(heldArrowId!==null){heldArrowId=null;render()}
+}
+// On release: if still on the same arrow, fire it. Otherwise just cancel.
+function releaseHold(cx,cy){
+    if(holdTimer){clearTimeout(holdTimer);holdTimer=null}
+    if(!holdFired||heldArrowId===null){heldArrowId=null;return}
+    const savedId=heldArrowId;
+    heldArrowId=null;holdFired=false;
+    // Check if pointer is still over the SAME arrow that was held
+    const{x,y}=screenToCanvas(cx,cy);
+    const idx=arrowAt(x,y);
+    if(idx!==-1&&testArrows[idx].id===savedId){
+        // Fire this specific arrow by index — don't re-detect from coords
+        fireArrow(idx);
+    }else{
+        render(); // released off the arrow, just cancel
+    }
+}
+
+// Mouse drag + hold
+let isDragging=false,dragStartX=0,dragStartY=0,dragViewX=0,dragViewY=0,dragMoved=false;
+canvas.addEventListener('mousedown',e=>{
+    dragMoved=false;
+    startHold(e.clientX,e.clientY);
+    isDragging=true;dragStartX=e.clientX;dragStartY=e.clientY;dragViewX=viewX;dragViewY=viewY;canvas.classList.add('grabbing');
+});
+window.addEventListener('mousemove',e=>{
+    if(!isDragging&&!holdFired)return;
+    if(isDragging){
+        const r=canvas.getBoundingClientRect();
+        const dx=(e.clientX-dragStartX)*(canvas.width/r.width),dy=(e.clientY-dragStartY)*(canvas.height/r.height);
+        if(Math.abs(dx)>3||Math.abs(dy)>3){dragMoved=true;cancelHold()}
+        viewX=dragViewX+dx;viewY=dragViewY+dy;clampPan();render();
+    }
+});
+let suppressNextClick=false;
+window.addEventListener('mouseup',e=>{
+    isDragging=false;canvas.classList.remove('grabbing');
+    if(holdFired){
+        suppressNextClick=true; // block the click that follows this mouseup
+        releaseHold(e.clientX,e.clientY);
+        return;
+    }
+    cancelHold();
+});
+canvas.addEventListener('click',e=>{
+    if(dragMoved){dragMoved=false;return}
+    if(suppressNextClick){suppressNextClick=false;return}
+    handleTap(e.clientX,e.clientY);
+});
+
+// Touch pinch+pan+hold
+let touches=[],lastPinchDist=0,lastTouchCenter=null,touchDragMoved=false;
+let touchStartX=0,touchStartY=0;
+let touchStartTime=0; // track when touch started for quick-tap detection
+let lastTapTime=0; // debounce rapid taps on same spot
+const TOUCH_DRAG_THRESHOLD=10; // pixels of movement before it counts as a drag
+const QUICK_TAP_MS=150; // taps shorter than this skip hold logic entirely
+
+canvas.addEventListener('touchstart',e=>{
+    e.preventDefault();isTouch=true;hoveredArrowIdx=-1;hoveredArrowId=null;
+    // Fully reset state from any previous touch
+    cancelHold();holdFired=false;touchDragMoved=false;
+    touches=[...e.touches];
+    if(touches.length===2){lastPinchDist=tDist(touches);lastTouchCenter=tCenter(touches)}
+    else if(touches.length===1){
+        touchStartX=touches[0].clientX;touchStartY=touches[0].clientY;
+        touchStartTime=Date.now();
+        startHold(touches[0].clientX,touches[0].clientY);
+        lastTouchCenter={x:touches[0].clientX,y:touches[0].clientY};dragViewX=viewX;dragViewY=viewY;
+    }
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+    e.preventDefault();const nt=[...e.touches];
+    if(nt.length===2){
+        cancelHold();
+        const nd=tDist(nt),nc=tCenter(nt);
+        if(lastPinchDist>0){const r=canvas.getBoundingClientRect();zoomAt((nc.x-r.left)*(canvas.width/r.width),(nc.y-r.top)*(canvas.height/r.height),nd/lastPinchDist)}
+        if(lastTouchCenter){const r=canvas.getBoundingClientRect();viewX+=(nc.x-lastTouchCenter.x)*(canvas.width/r.width);viewY+=(nc.y-lastTouchCenter.y)*(canvas.height/r.height);clampPan();render()}
+        lastPinchDist=nd;lastTouchCenter=nc;touchDragMoved=true;
+    }else if(nt.length===1){
+        const movedX=Math.abs(nt[0].clientX-touchStartX);
+        const movedY=Math.abs(nt[0].clientY-touchStartY);
+        if(movedX>TOUCH_DRAG_THRESHOLD||movedY>TOUCH_DRAG_THRESHOLD){
+            touchDragMoved=true;cancelHold();
+        }
+        if(touchDragMoved&&lastTouchCenter){
+            const r=canvas.getBoundingClientRect();
+            viewX=dragViewX+(nt[0].clientX-touchStartX)*(canvas.width/r.width);
+            viewY=dragViewY+(nt[0].clientY-touchStartY)*(canvas.height/r.height);
+            clampPan();render();
+        }
+    }
+},{passive:false});
+canvas.addEventListener('touchend',e=>{
+    e.preventDefault();
+    const now=Date.now();
+    if(e.changedTouches.length===1&&touches.length===1){
+        const t=e.changedTouches[0];
+        const tapDuration=now-touchStartTime;
+        if(holdFired){
+            releaseHold(t.clientX,t.clientY);
+        }else if(!touchDragMoved){
+            cancelHold();
+            // Quick tap: fire immediately, skip debounce for different arrows
+            if(now-lastTapTime>60){// 60ms debounce to prevent phantom double-taps
+                lastTapTime=now;
+                handleTap(t.clientX,t.clientY);
+            }
+        }else{
+            cancelHold();
+        }
+    }else{cancelHold()}
+    holdFired=false;
+    touches=[...e.touches];if(touches.length<2)lastPinchDist=0;lastTouchCenter=null;
+},{passive:false});
+function tDist(ts){const dx=ts[0].clientX-ts[1].clientX,dy=ts[0].clientY-ts[1].clientY;return Math.sqrt(dx*dx+dy*dy)}
+function tCenter(ts){return{x:(ts[0].clientX+ts[1].clientX)/2,y:(ts[0].clientY+ts[1].clientY)/2}}
+
+// ================================================================
+//  GAME CONFIG
+// ================================================================
+let GRID_SIZE=16,CELL_SIZE=1,DOT_RADIUS=3,LINE_WIDTH=4;
+let MIN_ARROWS=40,MAX_ARROWS=60,MIN_ARROW_LENGTH=2,MAX_ARROW_LENGTH=25;
+const MAX_GEN_ATTEMPTS=3000;
+const HARD_MIN_ARROWS=55; // never produce a puzzle with fewer than this
+let testArrows=[],nextArrowId=0;
+const activeAnimations=new Map(),bounceAnimations=new Map();
+let animationFrameId=null;
+const ANIM_DUR=1500,BOUNCE_DUR=300;
+let lives=3,maxLives=3,gameOver=false;
+let timeLimit=0,timeRemaining=0,timerInterval=null,gameStartTime=null,timerEnabled=false;
+let shapeMode='none',shapeGrid=null;
+let hintedArrowId=null,hintTimeout=null;
+let puzzleRotation=0; // current rotation angle in radians
+const ROTATION_SPEED=0.15; // radians per second (~8.6 degrees/sec, full turn ~42s)
+const wrongArrows=new Set(); // arrow IDs that player tried and were blocked
+let heldArrowId=null;    // arrow being long-pressed (show its path)
+let showAllPaths=false;  // grid toggle: show all escape paths
+let holdTimer=null;      // timer for detecting long press vs tap
+let holdFired=false;     // did the hold trigger?
+let gameMode='daily'; // 'daily','level','free'
+let currentDailyDate=null,currentLevel=null;
+let winHandled=false;
+
+function updateDrawSizes(){LINE_WIDTH=Math.max(2,Math.min(4,CELL_SIZE*.18));DOT_RADIUS=Math.max(2,Math.min(4,CELL_SIZE*.12));updateGridOffsets()}
+
+// ================================================================
+//  SHAPES
+// ================================================================
+function genShape(name,gs,rand){
+    const g=Array(gs).fill(null).map(()=>Array(gs).fill(false));
+    const cx=Math.floor(gs/2),cy=Math.floor(gs/2);
+    const r=rand||Math.random;
+    if(name==='none'){for(let i=0;i<gs;i++)for(let j=0;j<gs;j++)g[i][j]=true}
+    else if(name==='circle'){const rad=gs*.4;for(let i=0;i<gs;i++)for(let j=0;j<gs;j++)g[i][j]=Math.sqrt((j-cx)**2+(i-cy)**2)<=rad}
+    else if(name==='diamond'){const s=gs*.5;for(let i=0;i<gs;i++)for(let j=0;j<gs;j++)g[i][j]=Math.abs(j-cx)+Math.abs(i-cy)<=s}
+    else if(name==='heart'){const s=gs*.4;for(let i=0;i<gs;i++)for(let j=0;j<gs;j++){const x=(j-cx)/s,y=-(i-cy)/s-.3;g[i][j]=Math.pow(x*x+y*y-1,3)-x*x*y*y*y<=.1}}
+    else if(name==='star'){const o=gs*.4,inn=gs*.2;for(let i=0;i<gs;i++)for(let j=0;j<gs;j++){const x=j-cx,y=i-cy,a=Math.atan2(y,x)+Math.PI/2,d=Math.sqrt(x*x+y*y),pa=Math.PI*2/5,ma=((a%pa)+pa)%pa;const th=ma<pa/2?inn+(o-inn)*(2*ma/pa):o-(o-inn)*(2*(ma-pa/2)/pa);g[i][j]=d<=th}}
+    else if(name==='cross'){const arm=Math.floor(gs*.18);for(let i=0;i<gs;i++)for(let j=0;j<gs;j++)g[i][j]=Math.abs(j-cx)<=arm||Math.abs(i-cy)<=arm}
+    else if(name==='triangle'){for(let i=0;i<gs;i++)for(let j=0;j<gs;j++){const row=i/(gs-1),col=j/(gs-1)-.5;g[i][j]=row>=.1&&Math.abs(col)<=row*.5}}
+    else if(name==='ring'){const o=gs*.45,inn=gs*.2;for(let i=0;i<gs;i++)for(let j=0;j<gs;j++){const d=Math.sqrt((j-cx)**2+(i-cy)**2);g[i][j]=d<=o&&d>=inn}}
+    else if(name==='hexagon'){const rad=gs*.45;for(let i=0;i<gs;i++)for(let j=0;j<gs;j++){const x=(j-cx)/rad,y=(i-cy)/rad;g[i][j]=Math.max(Math.abs(x),Math.abs(y),Math.abs(x+y)*.577)<=1}}
+    else if(name==='lshape'){const t=Math.floor(gs*.35);for(let i=0;i<gs;i++)for(let j=0;j<gs;j++)g[i][j]=i>=gs-t||j<t}
+    else if(name==='crescent'){const r1=gs*.42,r2=gs*.35,off=gs*.18;for(let i=0;i<gs;i++)for(let j=0;j<gs;j++)g[i][j]=Math.sqrt((j-cx)**2+(i-cy)**2)<=r1&&Math.sqrt((j-cx-off)**2+(i-cy)**2)>r2}
+    else if(name==='blob'){const target=Math.floor(gs*gs*.45);const vis=Array(gs).fill(null).map(()=>Array(gs).fill(false));const fr=[[cy,cx]];vis[cy][cx]=true;let f=0;while(fr.length>0&&f<target){const idx=Math.floor(r()*Math.min(fr.length,8));const[row,col]=fr.splice(idx,1)[0];g[row][col]=true;f++;for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=row+dr,nc=col+dc;if(nr>=1&&nr<gs-1&&nc>=1&&nc<gs-1&&!vis[nr][nc]){vis[nr][nc]=true;if(r()<.75)fr.push([nr,nc])}}}}
+    else if(name==='swiss'){for(let i=0;i<gs;i++)for(let j=0;j<gs;j++)g[i][j]=true;const nh=3+Math.floor(r()*4);for(let h=0;h<nh;h++){const hr=Math.floor(r()*(gs-4))+2,hc=Math.floor(r()*(gs-4))+2,hrad=1+Math.floor(r()*Math.max(1,gs*.12));for(let i=0;i<gs;i++)for(let j=0;j<gs;j++)if(Math.sqrt((j-hc)**2+(i-hr)**2)<=hrad)g[i][j]=false}}
+    return g;
+}
+function isInShape(r,c){if(!shapeGrid)return true;if(r<0||r>=GRID_SIZE||c<0||c>=GRID_SIZE)return false;return shapeGrid[r][c]}
+
+// ================================================================
+//  ARROW GENERATION ENGINE (occupancy-grid accelerated)
+// ================================================================
+// Occupancy grid, flattened: occGrid[r*GRID_SIZE+c] = arrow index or -1.
+// One bounds-checked index per lookup instead of two, one allocation instead
+// of GRID_SIZE+1 per puzzle.
+let occGrid=null;
+function makeOccGrid(){
+    occGrid=new Int16Array(GRID_SIZE*GRID_SIZE).fill(-1);
+}
+function markArrow(idx,arrows){const p=arrows[idx].path;for(let i=0;i<p.length;i++)occGrid[p[i][0]*GRID_SIZE+p[i][1]]=idx}
+function unmarkArrow(idx,arrows){const p=arrows[idx].path;for(let i=0;i<p.length;i++){const k=p[i][0]*GRID_SIZE+p[i][1];if(occGrid[k]===idx)occGrid[k]=-1}}
+function rebuildOccGrid(arrows){makeOccGrid();for(let i=0;i<arrows.length;i++)markArrow(i,arrows)}
+function gridUsed(r,c){return occGrid[r*GRID_SIZE+c]!==-1}
+
+const NB4=[[-1,0],[1,0],[0,-1],[0,1]];
+function adjPts(r,c){const a=[];for(const[dr,dc]of NB4){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<GRID_SIZE&&nc>=0&&nc<GRID_SIZE&&isInShape(nr,nc))a.push([nr,nc])}return a}
+
+// Scratch buffers for the path walk - at most 4 candidates per step, so these
+// never grow. Replaces ~100 short-lived arrays per generated arrow.
+const _candR=new Int16Array(4),_candC=new Int16Array(4),_candS=new Float64Array(4);
+const _ordR=new Int16Array(4),_ordC=new Int16Array(4),_ordS=new Float64Array(4);
+
+function genArrowPath(existing,targetLen,preferCenter){
+    const wantLong=targetLen>=10;
+    const N=GRID_SIZE;
+    for(let att=0;att<150;att++){
+        let sr,sc;
+        if(preferCenter){const cr=Math.floor(N/2),cc=Math.floor(N/2),off=Math.floor(N/4);sr=Math.max(0,Math.min(N-1,cr+Math.floor(rng()*off*2)-off));sc=Math.max(0,Math.min(N-1,cc+Math.floor(rng()*off*2)-off))}else{sr=Math.floor(rng()*N);sc=Math.floor(rng()*N)}
+        if(gridUsed(sr,sc)||!isInShape(sr,sc))continue;
+        const path=[[sr,sc]];const inPath=new Set([sr*N+sc]);let curR=sr,curC=sc,lastDr=0,lastDc=0;
+        while(path.length<targetLen){
+            // Collect and score free neighbours in place. Identical visit order
+            // and identical number of rng() draws as the array version this
+            // replaces, so seeded puzzles come out byte-for-byte the same.
+            let n=0;
+            for(let k=0;k<4;k++){
+                const r=curR+NB4[k][0],c=curC+NB4[k][1];
+                if(r<0||r>=N||c<0||c>=N||!isInShape(r,c))continue;
+                const key=r*N+c;
+                if(occGrid[key]!==-1||inPath.has(key))continue;
+                const dr=r-curR,dc=c-curC;
+                let s=rng()*0.5;
+                if(lastDr===dr&&lastDc===dc)s+=wantLong?3:1;
+                else if(lastDr||lastDc)s+=wantLong?0.5:1.5;
+                let freeNeighbors=0;
+                for(let m=0;m<4;m++){
+                    const nr=r+NB4[m][0],nc=c+NB4[m][1];
+                    if(nr<0||nr>=N||nc<0||nc>=N||!isInShape(nr,nc))continue;
+                    const nk=nr*N+nc;
+                    if(occGrid[nk]===-1&&!inPath.has(nk))freeNeighbors++;
+                }
+                s+=freeNeighbors*0.4;
+                _candR[n]=r;_candC[n]=c;_candS[n]=s;n++;
+            }
+            if(!n)break;
+            // Stable descending insertion sort (n<=4), matching Array.sort.
+            for(let i=0;i<n;i++){
+                let j=i;
+                while(j>0&&_candS[i]>_ordS[j-1]){_ordR[j]=_ordR[j-1];_ordC[j]=_ordC[j-1];_ordS[j]=_ordS[j-1];j--}
+                _ordR[j]=_candR[i];_ordC[j]=_candC[i];_ordS[j]=_candS[i];
+            }
+            const topN=Math.max(1,Math.ceil(n*(wantLong?.6:.4)));
+            const pick=Math.floor(rng()*topN);
+            const chR=_ordR[pick],chC=_ordC[pick];
+            path.push([chR,chC]);inPath.add(chR*N+chC);
+            lastDr=chR-curR;lastDc=chC-curC;curR=chR;curC=chC;
+        }
+        if(path.length>=2&&!selfBlocks(path))return path;
+    }
+    return null;
+}
+
+function selfBlocks(path){if(path.length<2)return false;const l=path[path.length-1],p=path[path.length-2];const dx=l[1]-p[1],dy=l[0]-p[0];const pathSet=new Set(path.map(([r,c])=>r*GRID_SIZE+c));let cr=l[0]+dy,cc=l[1]+dx;while(cr>=0&&cr<GRID_SIZE&&cc>=0&&cc<GRID_SIZE){if(pathSet.has(cr*GRID_SIZE+cc))return true;cr+=dy;cc+=dx}return false}
+
+// Fast canMove using occupancy grid — O(gridSize) instead of O(n*pathLen)
+function canMoveFast(idx,arrows){
+    const a=arrows[idx];const p=a.path,l=p[p.length-1],s=p[p.length-2];
+    const dy=l[0]-s[0],dx=l[1]-s[1];
+    let cr=Math.round(l[0])+dy,cc=Math.round(l[1])+dx;
+    while(cr>=0&&cr<GRID_SIZE&&cc>=0&&cc<GRID_SIZE){
+        const o=occGrid[cr*GRID_SIZE+cc];
+        if(o!==-1&&o!==idx)return false;
+        cr+=dy;cc+=dx;
+    }
+    return true;
+}
+
+function genPuzzle(){
+    makeOccGrid();
+    const num=MIN_ARROWS+Math.floor(rng()*(MAX_ARROWS-MIN_ARROWS+1));
+    const arrows=rng()<.5?genLayered(num):genDistributed(num);
+    // Fill pass: pack tiny arrows into remaining gaps
+    fillGaps(arrows);
+    return arrows;
+}
+
+function fillGaps(arrows){
+    let filled=0;
+    for(let r=0;r<GRID_SIZE;r++){
+        for(let c=0;c<GRID_SIZE;c++){
+            if(gridUsed(r,c)||!isInShape(r,c))continue;
+            // Try each direction for a 2-cell arrow from this empty cell
+            for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){
+                const nr=r+dr,nc=c+dc;
+                if(nr<0||nr>=GRID_SIZE||nc<0||nc>=GRID_SIZE)continue;
+                if(gridUsed(nr,nc)||!isInShape(nr,nc))continue;
+                const path=[[r,c],[nr,nc]];
+                const a={id:nextArrowId++,path,color:'#111',isAnimating:false};
+                arrows.push(a);markArrow(arrows.length-1,arrows);
+                if(!solvableFast(arrows)){
+                    unmarkArrow(arrows.length-1,arrows);arrows.pop();
+                    continue;
+                }
+                filled++;
+                break; // placed one, move on
+            }
+        }
+    }
+}
+
+function genLayered(n){
+    const arrows=[];const inner=Math.floor(n*.35);let att=0;
+    while(arrows.length<inner&&att<MAX_GEN_ATTEMPTS){
+        att++;const len=att>MAX_GEN_ATTEMPTS/2?2+Math.floor(rng()*4):6+Math.floor(rng()*15);
+        const p=genArrowPath(arrows,Math.min(len,MAX_ARROW_LENGTH),true);
+        if(p){
+            const a={id:nextArrowId++,path:p,color:'#111',isAnimating:false};
+            arrows.push(a);markArrow(arrows.length-1,arrows);
+            if(!solvableFast(arrows)){unmarkArrow(arrows.length-1,arrows);arrows.pop()}
+        }
+    }
+    att=0;
+    while(arrows.length<n&&att<MAX_GEN_ATTEMPTS){
+        att++;const len=att>MAX_GEN_ATTEMPTS/2?2+Math.floor(rng()*4):8+Math.floor(rng()*20);
+        const p=genArrowPath(arrows,Math.min(len,MAX_ARROW_LENGTH),false);
+        if(p){
+            const a={id:nextArrowId++,path:p,color:'#111',isAnimating:false};
+            arrows.push(a);markArrow(arrows.length-1,arrows);
+            if(!solvableFast(arrows)){unmarkArrow(arrows.length-1,arrows);arrows.pop()}
+        }
+    }
+    return arrows;
+}
+
+function genDistributed(n){
+    const arrows=[];let fails=0;const maxFails=1000;
+    // Dense mode: when targeting many arrows, use shorter lengths to pack tightly
+    const dense=n>120;
+    while(arrows.length<n&&fails<maxFails){
+        const fillRatio=arrows.length/Math.max(1,n);
+        let tl;
+        if(fails>100){tl=3+Math.floor(rng()*4)} // desperate: short (3-6)
+        else if(fillRatio>.7){tl=3+Math.floor(rng()*5)} // nearly full: 3-7
+        else if(dense){
+            const roll=rng();
+            if(roll<.15){tl=3+Math.floor(rng()*3)}        // 15% short (3-5)
+            else if(roll<.45){tl=6+Math.floor(rng()*6)}   // 30% medium (6-11)
+            else if(roll<.75){tl=10+Math.floor(rng()*8)}  // 30% long (10-17)
+            else{tl=15+Math.floor(rng()*10)}               // 25% extra long (15-24)
+        }else{
+            const roll=rng();
+            if(roll<.10){tl=3+Math.floor(rng()*3)}        // 10% short (3-5)
+            else if(roll<.30){tl=6+Math.floor(rng()*6)}   // 20% medium (6-11)
+            else if(roll<.60){tl=12+Math.floor(rng()*12)} // 30% long (12-23)
+            else{tl=20+Math.floor(rng()*15)}               // 40% extra long (20-34)
+        }
+        tl=Math.min(tl,MAX_ARROW_LENGTH);
+        const p=genArrowPath(arrows,tl,false);
+        if(p){
+            const a={id:nextArrowId++,path:p,color:'#111',isAnimating:false};
+            arrows.push(a);markArrow(arrows.length-1,arrows);
+            if(!solvableFast(arrows)){unmarkArrow(arrows.length-1,arrows);arrows.pop();fails++;continue}
+            fails=0;
+        }else fails++;
+    }
+    return arrows;
+}
+
+// Fast solvability using "peel" - remove ALL free arrows each round.
+// Runs once per candidate arrow during generation (hundreds to thousands of
+// times per puzzle), so every buffer here is allocated once and reused. The
+// old version built a fresh 2D grid, a Set of every index and a fresh free
+// list on each call, which made allocation - not the search - the dominant
+// cost of loading a puzzle.
+let _slvGrid=null,_slvGridN=0,_slvAlive=null,_slvFree=null,_slvDead=null;
+function solvableFast(arrows){
+    const N=GRID_SIZE,n=arrows.length;
+    if(_slvGridN!==N){_slvGrid=new Int16Array(N*N);_slvGridN=N}
+    const g=_slvGrid;g.fill(-1);
+    if(!_slvAlive||_slvAlive.length<n){const cap=n+64;_slvAlive=new Int32Array(cap);_slvFree=new Int32Array(cap);_slvDead=new Uint8Array(cap)}
+    const alive=_slvAlive,free=_slvFree,dead=_slvDead;
+    dead.fill(0,0,n);
+    for(let i=0;i<n;i++){const p=arrows[i].path;for(let k=0;k<p.length;k++)g[p[k][0]*N+p[k][1]]=i;alive[i]=i}
+    let aliveN=n;
+    while(aliveN>0){
+        let freeN=0;
+        for(let ai=0;ai<aliveN;ai++){
+            const idx=alive[ai],p=arrows[idx].path,L=p.length,l=p[L-1],s=p[L-2];
+            const dy=l[0]-s[0],dx=l[1]-s[1];
+            let cr=l[0]+dy,cc=l[1]+dx,blocked=false;
+            while(cr>=0&&cr<N&&cc>=0&&cc<N){
+                const o=g[cr*N+cc];
+                if(o!==-1&&o!==idx){blocked=true;break}
+                cr+=dy;cc+=dx;
+            }
+            if(!blocked)free[freeN++]=idx;
+        }
+        if(!freeN)return false;
+        // Remove all free arrows at once
+        for(let fi=0;fi<freeN;fi++){
+            const idx=free[fi],p=arrows[idx].path;
+            for(let k=0;k<p.length;k++){const key=p[k][0]*N+p[k][1];if(g[key]===idx)g[key]=-1}
+            dead[idx]=1;
+        }
+        let w=0;
+        for(let ai=0;ai<aliveN;ai++){const idx=alive[ai];if(!dead[idx])alive[w++]=idx}
+        aliveN=w;
+    }
+    return true;
+}
+
+// ================================================================
+//  GAME LOGIC
+// ================================================================
+function arrowDir(a){const p=a.path,l=p[p.length-1],s=p[p.length-2];return[l[0]-s[0],l[1]-s[1]]}
+
+// ---- Live occupancy grid ---------------------------------------------------
+// liveGrid[r*N+c] holds the id of the non-animating arrow on that cell, or -1.
+// Every blocking question (can this fire? what blocks it?) used to be a full
+// scan over every arrow's every point, per cell along the ray. Now it is a
+// single walk down one ray. On a 44x44 / 280-arrow board that turns one Hint
+// from tens of millions of point comparisons into a few thousand.
+let liveGrid=null,liveGridN=0;
+function rebuildLiveGrid(){
+    liveGridN=GRID_SIZE;
+    liveGrid=new Int32Array(GRID_SIZE*GRID_SIZE).fill(-1);
+    for(const a of testArrows){updateArrowBounds(a);if(!a.isAnimating)liveAdd(a)}
+}
+function liveAdd(a){
+    if(!liveGrid)return;
+    const p=a.path,N=GRID_SIZE;
+    for(let i=0;i<p.length;i++){const r=Math.round(p[i][0]),c=Math.round(p[i][1]);if(r>=0&&r<N&&c>=0&&c<N)liveGrid[r*N+c]=a.id}
+}
+function liveRemove(a){
+    if(!liveGrid)return;
+    const p=a.path,N=GRID_SIZE;
+    for(let i=0;i<p.length;i++){const r=Math.round(p[i][0]),c=Math.round(p[i][1]);if(r>=0&&r<N&&c>=0&&c<N&&liveGrid[r*N+c]===a.id)liveGrid[r*N+c]=-1}
+}
+// Cached bounding box, used to skip off-screen arrows when zoomed in.
+function updateArrowBounds(a){
+    const p=a.path;let mnR=Infinity,mxR=-Infinity,mnC=Infinity,mxC=-Infinity;
+    for(let i=0;i<p.length;i++){const r=p[i][0],c=p[i][1];if(r<mnR)mnR=r;if(r>mxR)mxR=r;if(c<mnC)mnC=c;if(c>mxC)mxC=c}
+    a.minR=mnR;a.maxR=mxR;a.minC=mnC;a.maxC=mxC;
+}
+// First occupied cell along an arrow's escape ray: [row,col,blockerId], or null.
+function blockerFor(a){
+    const N=GRID_SIZE;
+    if(!liveGrid||liveGridN!==N||a.path.length<2)return null;
+    const[dy,dx]=arrowDir(a);const h=a.path[a.path.length-1];
+    let cr=Math.round(h[0])+dy,cc=Math.round(h[1])+dx;
+    while(cr>=0&&cr<N&&cc>=0&&cc<N){
+        const o=liveGrid[cr*N+cc];
+        if(o!==-1&&o!==a.id)return[cr,cc,o];
+        cr+=dy;cc+=dx;
+    }
+    return null;
+}
+function canMoveArrow(a){return !a||a.path.length<2?false:blockerFor(a)===null}
+function canMove(idx,arrows=testArrows){const a=arrows[idx];return a?canMoveArrow(a):false}
+
+const _candIds=new Set();
+function arrowAt(cx,cy){
+    // Generous touch targets: half a cell size minimum
+    const hitPt=Math.max(14,CELL_SIZE*.6);
+    const hitLine=Math.max(12,CELL_SIZE*.5);
+    const N=GRID_SIZE;
+    if(!liveGrid||liveGridN!==N||!(CELL_SIZE>0))return arrowAtSlow(cx,cy,hitPt,hitLine);
+    // Narrow to arrows that actually occupy cells near the pointer before doing
+    // any distance maths. The precise test below is unchanged - it just runs on
+    // a handful of arrows instead of all of them.
+    _candIds.clear();
+    const rad=Math.ceil(Math.max(hitPt,hitLine)/CELL_SIZE)+1;
+    const pr=Math.floor((cy-GRID_OY)/CELL_SIZE),pc=Math.floor((cx-GRID_OX)/CELL_SIZE);
+    for(let r=pr-rad;r<=pr+rad;r++){
+        if(r<0||r>=N)continue;
+        const row=r*N;
+        for(let c=pc-rad;c<=pc+rad;c++){
+            if(c<0||c>=N)continue;
+            const id=liveGrid[row+c];
+            if(id!==-1)_candIds.add(id);
+        }
+    }
+    if(!_candIds.size)return-1;
+    const hitPt2=hitPt*hitPt;
+    const ox=GRID_OX+CELL_SIZE/2,oy=GRID_OY+CELL_SIZE/2,cs=CELL_SIZE;
+    for(let i=testArrows.length-1;i>=0;i--){const a=testArrows[i];
+        if(!_candIds.has(a.id))continue;
+        const p=a.path;
+        for(let j=0;j<p.length;j++){const ddx=cx-(ox+p[j][1]*cs),ddy=cy-(oy+p[j][0]*cs);if(ddx*ddx+ddy*ddy<=hitPt2)return i}
+        for(let j=0;j<p.length-1;j++){if(dSeg(cx,cy,ox+p[j][1]*cs,oy+p[j][0]*cs,ox+p[j+1][1]*cs,oy+p[j+1][0]*cs)<=hitLine)return i}
+    }return-1;
+}
+// Fallback for the brief window before a puzzle's live grid exists.
+function arrowAtSlow(cx,cy,hitPt,hitLine){
+    for(let i=testArrows.length-1;i>=0;i--){const a=testArrows[i];
+        for(const p of a.path){const pos=g2c(p[0],p[1]);if(Math.sqrt((cx-pos.x)**2+(cy-pos.y)**2)<=hitPt)return i}
+        for(let j=0;j<a.path.length-1;j++){const p1=g2c(a.path[j][0],a.path[j][1]),p2=g2c(a.path[j+1][0],a.path[j+1][1]);if(dSeg(cx,cy,p1.x,p1.y,p2.x,p2.y)<=hitLine)return i}
+    }return-1;
+}
+function dSeg(px,py,x1,y1,x2,y2){const A=px-x1,B=py-y1,C=x2-x1,D=y2-y1,dot=A*C+B*D,len=C*C+D*D;let t=len?dot/len:-1;let xx,yy;if(t<0){xx=x1;yy=y1}else if(t>1){xx=x2;yy=y2}else{xx=x1+t*C;yy=y1+t*D}return Math.sqrt((px-xx)**2+(py-yy)**2)}
+
+// ================================================================
+//  ANIMATION
+// ================================================================
+function startExitAnim(idx){
+    const a=testArrows[idx];if(a.isAnimating)return;
+    liveRemove(a); // animating arrows never block anyone
+    a.isAnimating=true;
+    const[dy,dx]=arrowDir(a);
+    const orig=a.path.map(p=>[...p]);
+    const trail=[...orig];
+    let cr=orig[orig.length-1][0],cc=orig[orig.length-1][1];
+    // Extend well past the edge so entire arrow disappears
+    for(let i=0;i<orig.length+GRID_SIZE;i++){cr+=dy;cc+=dx;trail.push([cr,cc])}
+    const maxOff=trail.length-orig.length;
+    // Constant speed: 35 cells per second (slightly faster for snappier feel)
+    const dur=Math.max(350,maxOff/35*1000);
+    activeAnimations.set(a.id,{id:a.id,arrow:a,start:nowMs(),dur,trail,origLen:orig.length,maxOff,dy,dx});
+    ensureLoop();
+}
+// Bounce: snake forward toward blocker, hit it (flash red), snake back with elastic
+function startBounce(idx,br,bc){
+    const a=testArrows[idx];if(a.isAnimating)return;
+    liveRemove(a);
+    a.isAnimating=true;
+    const[dy,dx]=arrowDir(a);
+    const origPath=a.path.map(p=>[...p]);
+    const head=origPath[origPath.length-1];
+    let dist=dx!==0?Math.abs(bc-Math.round(head[1])):Math.abs(br-Math.round(head[0]));
+    dist=Math.max(dist,1);
+    const fwdPath=[...origPath];
+    let cr=head[0],cc=head[1];
+    for(let i=0;i<dist;i++){cr+=dy;cc+=dx;fwdPath.push([cr,cc])}
+    bounceAnimations.set(a.id,{
+        id:a.id,arrow:a,start:nowMs(),dur:BOUNCE_DUR,
+        origPath,fwdPath,origLen:origPath.length,
+        dy,dx,fwdSteps:dist
+    });
+    ensureLoop();
+}
+
+function animLoop(ts){
+    animationFrameId=null;
+    const now=ts===undefined?nowMs():ts;const done=[],bdone=[];
+    for(const[id,s]of activeAnimations){
+        const p=Math.min((now-s.start)/s.dur,1);
+        // Direct object reference - this was a linear findIndex over every
+        // arrow, for every animation, on every frame.
+        const arw=s.arrow;
+        if(arw.removed){done.push(id);continue}
+        // Smooth fractional offset
+        const off=p*s.maxOff;
+        const np=[];
+        for(let i=0;i<s.origLen;i++){
+            const ti=off+i;
+            const bi=Math.floor(ti),fr=ti-bi;
+            if(bi<0||bi>=s.trail.length)continue;
+            if(fr<0.001||bi>=s.trail.length-1){
+                // Exact grid point — no interpolation needed
+                const pt=s.trail[bi];
+                if(pt[0]>=-1&&pt[0]<=GRID_SIZE&&pt[1]>=-1&&pt[1]<=GRID_SIZE)np.push(pt);
+            }else{
+                const a1=s.trail[bi],a2=s.trail[bi+1];
+                // Only interpolate if both points are on the same axis (no diagonal)
+                if(a1[0]===a2[0]||a1[1]===a2[1]){
+                    const nr=a1[0]+(a2[0]-a1[0])*fr,nc=a1[1]+(a2[1]-a1[1])*fr;
+                    if(nr>=-1&&nr<=GRID_SIZE&&nc>=-1&&nc<=GRID_SIZE)np.push([nr,nc]);
+                }else{
+                    // Corner: snap to the nearer grid point (no diagonal)
+                    const pt=fr<0.5?a1:a2;
+                    if(pt[0]>=-1&&pt[0]<=GRID_SIZE&&pt[1]>=-1&&pt[1]<=GRID_SIZE)np.push(pt);
+                }
+            }
+        }
+        arw.path=np;
+        if(p>=1||!np.length)done.push(id);
+    }
+    for(const[id,s]of bounceAnimations){
+        const p=Math.min((now-s.start)/s.dur,1);
+        const arw=s.arrow;
+        if(arw.removed){bdone.push(id);continue}
+        // Phase 1 (0→0.3): snap forward toward blocker
+        // Phase 2 (0.3→1.0): damped spring back
+        let snakeOffset;
+        if(p<0.3){
+            const t=p/0.3;
+            snakeOffset=s.fwdSteps*t*t; // ease in forward
+        }else{
+            const t=(p-0.3)/0.7;
+            // Damped bounce: decaying cosine
+            const decay=Math.exp(-4*t);
+            const bounce=decay*Math.cos(t*Math.PI*2);
+            snakeOffset=s.fwdSteps*Math.max(0,bounce*0.3);
+        }
+        // Interpolate each point along the forward path
+        const np=[];
+        for(let i=0;i<s.origLen;i++){
+            const ni=i+snakeOffset;
+            const bi=Math.floor(ni),fr=ni-bi;
+            if(bi>=0&&bi<s.fwdPath.length-1){
+                const p1=s.fwdPath[bi],p2=s.fwdPath[bi+1];
+                np.push([p1[0]+(p2[0]-p1[0])*fr,p1[1]+(p2[1]-p1[1])*fr]);
+            }else if(bi<s.fwdPath.length){
+                np.push([...s.fwdPath[Math.min(bi,s.fwdPath.length-1)]]);
+            }
+        }
+        arw.path=np.length?np:s.origPath.map(p=>[...p]);
+        // Flash at impact, persistent red if wrong
+        const isWrong=wrongArrows.has(id);
+        arw.color=(p>=0.28&&p<=0.5)?'#f00':isWrong?'#dc2626':'#111';
+        if(p>=1)bdone.push(id);
+    }
+    // Finished exits: mark, then compact testArrows in one pass instead of
+    // splice-plus-rescan per arrow.
+    if(done.length){
+        for(const id of done){
+            const s=activeAnimations.get(id);
+            if(s){s.arrow.removed=true;if(s.arrow.id===hoveredArrowId){hoveredArrowId=null;hoveredArrowIdx=-1}}
+            activeAnimations.delete(id);wrongArrows.delete(id);
+        }
+        testArrows=testArrows.filter(a=>!a.removed);
+        // Something that just left may have freed a blocked arrow
+        if(wrongArrows.size){
+            for(const a of testArrows)if(wrongArrows.has(a.id)&&!a.isAnimating&&canMoveArrow(a)){wrongArrows.delete(a.id);a.color='#111'}
+        }
+        needsRender=true;
+    }
+    for(const id of bdone){
+        const s=bounceAnimations.get(id);
+        if(s&&!s.arrow.removed){
+            const arw=s.arrow;
+            arw.path=s.origPath.map(p=>[...p]);
+            arw.isAnimating=false;
+            arw.color=wrongArrows.has(id)?'#dc2626':'#111';
+            updateArrowBounds(arw);
+            liveAdd(arw); // back on the board, blocks again
+        }
+        bounceAnimations.delete(id);
+    }
+    if(bdone.length)needsRender=true;
+    // Rotation needs a fresh frame continuously while playing. Once the board
+    // is finished we idle instead of burning a redraw per frame behind a modal.
+    const busy=activeAnimations.size||bounceAnimations.size||particles.length||shakeAmount>0||hintedArrowId!==null;
+    if((!gameOver&&!winHandled)||busy||needsRender){needsRender=false;draw(now)}
+    if(gameScreenActive())animationFrameId=requestAnimationFrame(animLoop);
+}
+
+// ================================================================
+//  RENDERING
+// ================================================================
+// Grid offset to center the grid within the (possibly non-square) canvas.
+// Cached: this was recomputed inside g2c for every path point of every arrow,
+// on every frame.
+let GRID_OX=0,GRID_OY=0;
+function updateGridOffsets(){GRID_OX=(canvas.width-GRID_SIZE*CELL_SIZE)/2;GRID_OY=(canvas.height-GRID_SIZE*CELL_SIZE)/2}
+function gridOffsetX(){return GRID_OX}
+function gridOffsetY(){return GRID_OY}
+function g2c(row,col){return{x:GRID_OX+col*CELL_SIZE+CELL_SIZE/2,y:GRID_OY+row*CELL_SIZE+CELL_SIZE/2}}
+
+// Hover tracking (mouse only - skip on touch devices). Tracked by id as well as
+// index so a removal can't slide the highlight onto a different arrow.
+let hoveredArrowIdx=-1,hoveredArrowId=null,isTouch=false;
+canvas.addEventListener('mousemove',e=>{
+    if(isTouch||isDragging||gameOver)return;
+    const{x,y}=screenToCanvas(e.clientX,e.clientY);
+    const idx=arrowAt(x,y);
+    const id=idx!==-1?testArrows[idx].id:null;
+    if(id!==hoveredArrowId){
+        hoveredArrowIdx=idx;hoveredArrowId=id;
+        canvas.style.cursor=idx!==-1?(viewScale>1?'grab':'pointer'):(viewScale>1?'grab':'default');
+        render();
+    }
+});
+canvas.addEventListener('mouseleave',()=>{if(!isTouch&&hoveredArrowId!==null){hoveredArrowIdx=-1;hoveredArrowId=null;render()}});
+
+// Particles
+const particles=[];
+function spawnParticles(row,col,color){
+    const pos=g2c(row,col);
+    for(let i=0;i<6;i++){
+        const angle=Math.random()*Math.PI*2,speed=CELL_SIZE*(1.5+Math.random()*2);
+        particles.push({x:pos.x,y:pos.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:1,color,size:Math.max(2,CELL_SIZE*.12)});
+    }
+}
+function updateParticles(dt){
+    for(let i=particles.length-1;i>=0;i--){
+        const p=particles[i];
+        p.x+=p.vx*dt;p.y+=p.vy*dt;
+        p.vx*=0.92;p.vy*=0.92;
+        p.life-=dt*2.5;
+        if(p.life<=0)particles.splice(i,1);
+    }
+}
+function drawParticles(){
+    for(const p of particles){
+        ctx.globalAlpha=p.life*0.8;
+        ctx.fillStyle=p.color;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
+        ctx.fill();
+    }
+    ctx.globalAlpha=1;
+}
+
+// Screen shake
+let shakeAmount=0,shakeDecay=0;
+function triggerShake(){shakeAmount=isTouch?Math.max(2,CELL_SIZE*0.08):Math.max(3,CELL_SIZE*0.12);shakeDecay=nowMs()}
+
+function drawGridDots(){
+    // One path, one fill. This used to issue a separate beginPath/arc/fill per
+    // dot - on a 44x44 board that is 1936 draw calls every single frame.
+    const r=Math.max(1,CELL_SIZE*0.04);
+    const cs=CELL_SIZE,ox=GRID_OX+cs/2,oy=GRID_OY+cs/2;
+    ctx.fillStyle='rgba(0,0,0,0.06)';
+    ctx.beginPath();
+    for(let row=0;row<GRID_SIZE;row++){
+        const y=oy+row*cs;
+        for(let col=0;col<GRID_SIZE;col++){
+            if(!isInShape(row,col))continue;
+            const x=ox+col*cs;
+            ctx.moveTo(x+r,y);ctx.arc(x,y,r,0,TAU);
+        }
+    }
+    ctx.fill();
+}
+
+function drawArrow(a){
+    const path=a.path;if(path.length<2)return;
+    const hinted=a.id===hintedArrowId;
+    const isHeld=a.id===heldArrowId;
+    const isWrongArrow=wrongArrows.has(a.id);
+    const isHovered=!a.isAnimating&&a.id===hoveredArrowId;
+
+    // Hint glow
+    if(hinted){
+        const pulse=.3+Math.sin(Date.now()%1000/159)*.3;
+        ctx.strokeStyle='rgba(34,197,94,0.4)';ctx.lineWidth=LINE_WIDTH+Math.max(6,CELL_SIZE*.35);
+        ctx.globalAlpha=pulse;ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.beginPath();const s=g2c(path[0][0],path[0][1]);ctx.moveTo(s.x,s.y);
+        for(let i=1;i<path.length;i++){const p=g2c(path[i][0],path[i][1]);ctx.lineTo(p.x,p.y)}
+        ctx.stroke();ctx.globalAlpha=1;
+    }
+
+    // Hover glow
+    if(isHovered&&!isWrongArrow&&!hinted){
+        ctx.strokeStyle='rgba(59,130,246,0.2)';ctx.lineWidth=LINE_WIDTH+Math.max(4,CELL_SIZE*.25);
+        ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.beginPath();const s=g2c(path[0][0],path[0][1]);ctx.moveTo(s.x,s.y);
+        for(let i=1;i<path.length;i++){const p=g2c(path[i][0],path[i][1]);ctx.lineTo(p.x,p.y)}
+        ctx.stroke();
+    }
+
+    // Shadow pass
+    if(!a.isAnimating){
+        ctx.strokeStyle='rgba(0,0,0,0.08)';ctx.lineWidth=LINE_WIDTH+2;
+        ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.beginPath();const s=g2c(path[0][0],path[0][1]);ctx.moveTo(s.x+1,s.y+1);
+        for(let i=1;i<path.length;i++){const p=g2c(path[i][0],path[i][1]);ctx.lineTo(p.x+1,p.y+1)}
+        ctx.stroke();
+    }
+
+    // Main arrow color
+    let drawColor;
+    if(isWrongArrow)drawColor=a.color==='#f00'?'#ef4444':'#dc2626';
+    else if(isHeld)drawColor='#2563eb';
+    else if(isHovered)drawColor='#1d4ed8';
+    else drawColor=a.color==='#111'?'#1a1a2e':a.color;
+
+    ctx.globalAlpha=a.isAnimating?.5:1;
+    ctx.strokeStyle=drawColor;ctx.lineWidth=LINE_WIDTH;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();const sp=g2c(path[0][0],path[0][1]);ctx.moveTo(sp.x,sp.y);
+    for(let i=1;i<path.length;i++){const pos=g2c(path[i][0],path[i][1]);ctx.lineTo(pos.x,pos.y)}
+    ctx.stroke();
+
+
+    // Arrowhead (cleaner chevron)
+    const last=path[path.length-1],prev=path[path.length-2];
+    const dx=last[1]-prev[1],dy=last[0]-prev[0];
+    const ep=g2c(last[0],last[1]);
+    const ahl=Math.max(5,CELL_SIZE*.38),ahw=Math.max(3,LINE_WIDTH*2.2);
+    let tx=ep.x,ty=ep.y;
+    if(dx>0)tx+=ahl;else if(dx<0)tx-=ahl;else if(dy>0)ty+=ahl;else ty-=ahl;
+    ctx.fillStyle=drawColor;ctx.beginPath();
+    if(dx!==0){ctx.moveTo(tx,ty);ctx.lineTo(ep.x,ep.y-ahw);ctx.lineTo(ep.x+(.3*(dx>0?-1:1))*ahl,ep.y);ctx.lineTo(ep.x,ep.y+ahw)}
+    else{ctx.moveTo(tx,ty);ctx.lineTo(ep.x-ahw,ep.y);ctx.lineTo(ep.x,ep.y+(.3*(dy>0?-1:1))*ahl);ctx.lineTo(ep.x+ahw,ep.y)}
+    ctx.closePath();ctx.fill();
+    ctx.globalAlpha=1;
+}
+
+// ---- Batched renderer -------------------------------------------------------
+// Plain arrows (the overwhelming majority) all share one colour and one width,
+// so they go into three shared paths - shadows, bodies, heads - instead of
+// ~4 path builds plus a stack of canvas state changes each. On a 280-arrow
+// board that is roughly 1100 stroke/fill calls per frame down to 3.
+const _plainBuf=[],_specialBuf=[];
+
+// Visible grid window, padded, used to skip arrows scrolled off screen while
+// zoomed. Mirrors the inverse transform in screenToCanvas().
+let cullMinR=-1e9,cullMaxR=1e9,cullMinC=-1e9,cullMaxC=1e9;
+function updateCullWindow(){
+    if(viewScale<=1.5||!(CELL_SIZE>0)){cullMinR=cullMinC=-1e9;cullMaxR=cullMaxC=1e9;return}
+    const gcx=GRID_OX+GRID_SIZE*CELL_SIZE/2,gcy=GRID_OY+GRID_SIZE*CELL_SIZE/2;
+    const cos=Math.cos(-puzzleRotation),sin=Math.sin(-puzzleRotation);
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(let i=0;i<4;i++){
+        const wx=(((i&1)?canvas.width:0)-viewX)/viewScale;
+        const wy=(((i&2)?canvas.height:0)-viewY)/viewScale;
+        const dx=wx-gcx,dy=wy-gcy;
+        const rx=gcx+dx*cos-dy*sin,ry=gcy+dx*sin+dy*cos;
+        if(rx<minX)minX=rx;if(rx>maxX)maxX=rx;
+        if(ry<minY)minY=ry;if(ry>maxY)maxY=ry;
+    }
+    const pad=2*CELL_SIZE;
+    cullMinC=(minX-pad-GRID_OX)/CELL_SIZE-0.5;
+    cullMaxC=(maxX+pad-GRID_OX)/CELL_SIZE-0.5;
+    cullMinR=(minY-pad-GRID_OY)/CELL_SIZE-0.5;
+    cullMaxR=(maxY+pad-GRID_OY)/CELL_SIZE-0.5;
+}
+
+function tracePath(p,off){
+    const cs=CELL_SIZE,ox=GRID_OX+cs/2+off,oy=GRID_OY+cs/2+off;
+    ctx.moveTo(ox+p[0][1]*cs,oy+p[0][0]*cs);
+    for(let i=1;i<p.length;i++)ctx.lineTo(ox+p[i][1]*cs,oy+p[i][0]*cs);
+}
+function traceHead(p){
+    const cs=CELL_SIZE,ahl=Math.max(5,cs*.38),ahw=Math.max(3,LINE_WIDTH*2.2);
+    const last=p[p.length-1],prev=p[p.length-2];
+    const dx=last[1]-prev[1],dy=last[0]-prev[0];
+    const ex=GRID_OX+last[1]*cs+cs/2,ey=GRID_OY+last[0]*cs+cs/2;
+    let tx=ex,ty=ey;
+    if(dx>0)tx+=ahl;else if(dx<0)tx-=ahl;else if(dy>0)ty+=ahl;else ty-=ahl;
+    if(dx!==0){ctx.moveTo(tx,ty);ctx.lineTo(ex,ey-ahw);ctx.lineTo(ex+(.3*(dx>0?-1:1))*ahl,ey);ctx.lineTo(ex,ey+ahw)}
+    else{ctx.moveTo(tx,ty);ctx.lineTo(ex-ahw,ey);ctx.lineTo(ex,ey+(.3*(dy>0?-1:1))*ahl);ctx.lineTo(ex+ahw,ey)}
+    ctx.closePath();
+}
+
+function drawArrows(){
+    _plainBuf.length=0;_specialBuf.length=0;
+    for(let i=0;i<testArrows.length;i++){
+        const a=testArrows[i];
+        if(a.path.length<2)continue;
+        if(a.isAnimating||a.id===hintedArrowId||a.id===heldArrowId||a.id===hoveredArrowId||a.color!=='#111'||wrongArrows.has(a.id)){
+            _specialBuf.push(a);continue;
+        }
+        if(a.maxR<cullMinR||a.minR>cullMaxR||a.maxC<cullMinC||a.minC>cullMaxC)continue;
+        _plainBuf.push(a);
+    }
+    const n=_plainBuf.length;
+    if(n){
+        ctx.lineCap='round';ctx.lineJoin='round';
+        // shadows
+        ctx.beginPath();
+        for(let i=0;i<n;i++)tracePath(_plainBuf[i].path,1);
+        ctx.strokeStyle='rgba(0,0,0,0.08)';ctx.lineWidth=LINE_WIDTH+2;ctx.stroke();
+        // bodies
+        ctx.beginPath();
+        for(let i=0;i<n;i++)tracePath(_plainBuf[i].path,0);
+        ctx.strokeStyle='#1a1a2e';ctx.lineWidth=LINE_WIDTH;ctx.stroke();
+        // heads
+        ctx.beginPath();
+        for(let i=0;i<n;i++)traceHead(_plainBuf[i].path);
+        ctx.fillStyle='#1a1a2e';ctx.fill();
+    }
+    // Highlighted / animating arrows keep the original per-arrow path, drawn
+    // last so they sit on top.
+    for(let i=0;i<_specialBuf.length;i++)drawArrow(_specialBuf[i]);
+}
+
+// Draw escape path: straight line from arrow head all the way to grid edge
+// Passes through everything — no hint about blockers
+function drawEscapePath(a,highlight){
+    if(a.path.length<2||a.isAnimating)return;
+    const[dy,dx]=arrowDir(a);
+    const head=a.path[a.path.length-1];
+    const hr=Math.round(head[0]),hc=Math.round(head[1]);
+    let cr=hr,cc=hc;
+    while(cr+dy>=0&&cr+dy<GRID_SIZE&&cc+dx>=0&&cc+dx<GRID_SIZE){cr+=dy;cc+=dx}
+    const start=g2c(hr,hc);
+    const end=g2c(cr,cc);
+    const isWrong=wrongArrows.has(a.id);
+    ctx.save();
+    if(highlight){
+        ctx.strokeStyle=isWrong?'rgba(239,68,68,0.5)':'rgba(59,130,246,0.5)';
+        ctx.lineWidth=Math.max(2,LINE_WIDTH*1.2);
+        ctx.setLineDash([]);
+    }else{
+        ctx.strokeStyle=isWrong?'rgba(239,68,68,0.12)':'rgba(59,130,246,0.10)';
+        ctx.lineWidth=Math.max(1,LINE_WIDTH*0.5);
+        ctx.setLineDash([CELL_SIZE*0.3,CELL_SIZE*0.3]);
+    }
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(start.x,start.y);
+    ctx.lineTo(end.x,end.y);
+    ctx.stroke();
+    ctx.restore();
+}
+
+
+let lastRenderTime=nowMs();
+let needsRender=true;
+// render() is now a request, not a redraw: the rAF loop owns drawing, so a
+// drag or pinch that fires several events in one frame costs one frame, not
+// several full canvas repaints.
+function render(){needsRender=true;ensureLoop()}
+function ensureLoop(){if(!animationFrameId&&gameScreenActive())animationFrameId=requestAnimationFrame(animLoop)}
+
+function draw(ts){
+    const now=ts===undefined?nowMs():ts;const dt=Math.min((now-lastRenderTime)/1000,0.05);lastRenderTime=now;
+
+    // Advance rotation
+    if(!gameOver)puzzleRotation+=ROTATION_SPEED*dt;
+
+    // Update particles
+    updateParticles(dt);
+
+    // Screen shake offset
+    let sx=0,sy=0;
+    if(shakeAmount>0.1){
+        const elapsed=(now-shakeDecay)/1000;
+        shakeAmount*=Math.max(0,1-elapsed*8);
+        sx=(Math.random()-0.5)*shakeAmount*2;
+        sy=(Math.random()-0.5)*shakeAmount*2;
+    }else shakeAmount=0;
+
+    ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // Puzzle rotation
+    const gcx=GRID_OX+GRID_SIZE*CELL_SIZE/2;
+    const gcy=GRID_OY+GRID_SIZE*CELL_SIZE/2;
+    const rot=puzzleRotation;
+    ctx.setTransform(viewScale,0,0,viewScale,viewX+sx,viewY+sy);
+    ctx.translate(gcx,gcy);
+    ctx.rotate(rot);
+    ctx.translate(-gcx,-gcy);
+
+    updateCullWindow();
+
+    // Grid dots
+    drawGridDots();
+
+    // Draw all escape paths first (behind arrows) if grid mode is on
+    if(showAllPaths){testArrows.forEach(a=>{if(!a.isAnimating)drawEscapePath(a,false)})}
+    // Draw held arrow's path (highlighted)
+    if(heldArrowId!==null){const ha=testArrows.find(a=>a.id===heldArrowId);if(ha&&!ha.isAnimating)drawEscapePath(ha,true)}
+    drawArrows();
+
+    // Particles on top
+    drawParticles();
+
+    if(gameOver)showGameOver();
+    else if(testArrows.length===0&&!activeAnimations.size&&!particles.length)showWin();
+    ctx.setTransform(1,0,0,1,0,0);
+    if(viewScale>1.05){ctx.fillStyle='rgba(0,0,0,.15)';ctx.font='12px sans-serif';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(Math.round(viewScale*100)+'%',8,8)}
+    updateLives();updateCount();
+}
+
+let gameOverShown=false;
+
+function showGameOver(){
+    if(gameOverShown)return;
+    gameOverShown=true;
+    stopTimer();
+    const remaining=testArrows.filter(a=>!a.isAnimating).length;
+    document.getElementById('loseSub').textContent=remaining+' arrow'+(remaining!==1?'s':'')+' remaining';
+    setTimeout(()=>toggleModal('loseModal'),600);
+}
+
+function showWin(){
+    if(winHandled)return;
+    winHandled=true;
+    stopTimer();
+    const elapsed=Math.floor((Date.now()-gameStartTime)/1000),m=Math.floor(elapsed/60),s=elapsed%60;
+    const ts=`${m}:${String(s).padStart(2,'0')}`;
+    window.lastWinData={time:ts,lives,maxLives,mode:gameMode,date:currentDailyDate,level:currentLevel};
+    if(gameMode==='daily'&&currentDailyDate)saveDailyDone(ts);
+    if(gameMode==='level'&&currentLevel!==null)saveLevelDone(currentLevel,ts);
+
+    // Build win modal content
+    let title='Solved!';
+    if(gameMode==='daily')title='Daily complete!';
+    else if(gameMode==='level')title='Level '+currentLevel+' cleared!';
+    document.getElementById('winTitle').textContent=title;
+
+    const hearts='❤️'.repeat(lives)+'🖤'.repeat(maxLives-lives);
+    document.getElementById('winStats').innerHTML=
+        `<p style="font-size:28px;margin:8px 0;letter-spacing:4px">${hearts}</p>`+
+        `<p><strong>Time</strong> ${ts}</p>`;
+
+    // Next button label
+    const nextBtn=document.getElementById('winNextBtn');
+    if(gameMode==='level'){nextBtn.textContent='Level '+(currentLevel+1);nextBtn.style.display=''}
+    else if(gameMode==='daily'){nextBtn.style.display='none'}
+    else{nextBtn.textContent='New puzzle';nextBtn.style.display=''}
+
+    // Show native share button only if Web Share API is available
+    document.getElementById('nativeShareBtn').style.display=navigator.share?'':'none';
+
+    document.getElementById('winSub').textContent=
+        gameMode==='daily'?fmtDateShort(currentDailyDate):
+        gameMode==='level'?'Level '+currentLevel:'Free Play';
+
+    setTimeout(()=>toggleModal('winModal'),800);
+}
+
+function winNext(){
+    toggleModal('winModal');
+    if(gameMode==='level'&&currentLevel!==null)startLevel(currentLevel+1);
+    else startFreePlay();
+}
+
+// Both of these ran on every frame, rebuilding DOM and writing layout-affecting
+// styles 60x a second while nothing had changed. Now they are no-ops unless the
+// value actually moved.
+let prevLives=-1,prevMaxLives=-1;
+function updateLives(){
+    if(lives===prevLives&&maxLives===prevMaxLives)return;
+    const lostOne=prevLives>0&&lives<prevLives;
+    livesEl.innerHTML='';
+    for(let i=0;i<maxLives;i++){
+        const s=document.createElement('span');
+        s.className='heart'+(i>=lives?' lost':'');
+        if(lostOne&&i===lives)s.classList.add('pulse');
+        s.textContent=i<lives?'❤️':'🖤';
+        livesEl.appendChild(s);
+    }
+    prevLives=lives;prevMaxLives=maxLives;
+}
+let prevCount=-1,prevPct=-1,totalArrows=0;
+function updateCount(){
+    let n=0;
+    for(let i=0;i<testArrows.length;i++)if(!testArrows[i].isAnimating)n++;
+    if(n===prevCount)return;
+    prevCount=n;
+    const pct=totalArrows>0?Math.round((1-n/totalArrows)*100):0;
+    if(pct!==prevPct){prevPct=pct;progressFillEl.style.width=pct+'%'}
+    checkBdaySurprise();
+}
+
+// ================================================================
+//  HINT
+// ================================================================
+// The pulse used to spin up a SECOND requestAnimationFrame loop alongside the
+// main one, so every frame was drawn twice for five seconds. The main loop
+// already redraws continuously.
+function showHint(){
+    if(gameOver)return;
+    if(hintTimeout){clearTimeout(hintTimeout);hintTimeout=null}
+    const mv=[];
+    for(let i=0;i<testArrows.length;i++)if(!testArrows[i].isAnimating&&canMove(i))mv.push(testArrows[i]);
+    if(!mv.length){hintedArrowId=null;render();return}
+    hintedArrowId=mv[Math.floor(Math.random()*mv.length)].id;
+    hintTimeout=setTimeout(()=>{hintedArrowId=null;hintTimeout=null;render()},5000);
+    render();
+}
+
+// ================================================================
+//  TAP HANDLER
+// ================================================================
+function fireArrow(idx){
+    const a=testArrows[idx];if(!a||a.isAnimating)return;
+    hintedArrowId=null;if(hintTimeout){clearTimeout(hintTimeout);hintTimeout=null}
+    if(canMove(idx)){
+        wrongArrows.delete(a.id);
+        // Spawn success particles at the head
+        const head=a.path[a.path.length-1];
+        spawnParticles(head[0],head[1],'#22c55e');
+        startExitAnim(idx);
+    }else{
+        if(!wrongArrows.has(a.id)){
+            if(!isBdayPuzzle){lives--;if(lives<=0)gameOver=true;} // invincible on special dates
+            wrongArrows.add(a.id);
+        }
+        triggerShake();
+        const h=a.path[a.path.length-1];
+        const blk=blockerFor(a); // one ray walk, was a scan of every arrow per cell
+        if(blk){spawnParticles(blk[0],blk[1],'#ef4444');startBounce(idx,blk[0],blk[1])}
+        else{spawnParticles(h[0],h[1],'#ef4444');render()}
+    }
+}
+
+function handleTap(cx,cy){
+    if(!gameOver&&testArrows.length===0&&!activeAnimations.size)return; // win modal handles this
+    if(gameOver)return;
+    const{x,y}=screenToCanvas(cx,cy);const idx=arrowAt(x,y);if(idx===-1)return;
+    fireArrow(idx);
+}
+
+// Keyboard
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-bg.active').forEach(m=>m.classList.remove('active'));if((e.key==='h'||e.key==='H')&&e.target.tagName!=='INPUT')showHint()});
+
+// ================================================================
+//  TIMER
+// ================================================================
+function startTimer(){gameStartTime=Date.now();
+    // Start continuous render loop for rotation
+    ensureLoop();
+    if(!timerEnabled)return;if(timerInterval)clearInterval(timerInterval);timeRemaining=timeLimit;timerInterval=setInterval(()=>{if(!gameOver){timeRemaining--;if(timeRemaining<=0){timeRemaining=0;gameOver=true;clearInterval(timerInterval)}render()}},1000)}
+function stopTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null}}
+
+// ================================================================
+//  PERSISTENCE
+// ================================================================
+function loadData(){try{return JSON.parse(localStorage.getItem('arrows_v2'))||{}}catch{return{}}}
+function saveData(d){localStorage.setItem('arrows_v2',JSON.stringify(d))}
+function saveDailyDone(ts){const d=loadData();if(!d.daily)d.daily={};d.daily[currentDailyDate]={time:ts,lives};let streak=0;const dt=new Date();while(true){const ds=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;if(d.daily[ds]){streak++;dt.setDate(dt.getDate()-1)}else break}d.streak=streak;saveData(d)}
+function saveLevelDone(lvl,ts){const d=loadData();if(!d.levels)d.levels={};d.levels[lvl]={time:ts,lives};saveData(d)}
+function getCompletedLevels(){const d=loadData();return d.levels||{}}
+function getStreak(){return loadData().streak||0}
+function getDailyDone(){return loadData().daily||{}}
+
+// ================================================================
+//  GAME SETUP HELPERS
+// ================================================================
+function resetState(){activeAnimations.clear();bounceAnimations.clear();wrongArrows.clear();heldArrowId=null;showAllPaths=false;cancelHold();
+    document.querySelectorAll('.modal-bg.active').forEach(m=>m.classList.remove('active'));if(animationFrameId){cancelAnimationFrame(animationFrameId);animationFrameId=null}hintedArrowId=null;if(hintTimeout){clearTimeout(hintTimeout);hintTimeout=null}nextArrowId=0;gameOver=false;winHandled=false;gameOverShown=false;viewScale=1;viewX=0;viewY=0;stopTimer();lives=3;maxLives=3;timerEnabled=false;hoveredArrowIdx=-1;hoveredArrowId=null;prevLives=-1;prevMaxLives=-1;prevCount=-1;prevPct=-1;particles.length=0;shakeAmount=0;lastTapTime=0;puzzleRotation=0;liveGrid=null;liveGridN=0;needsRender=true;lastRenderTime=nowMs()}
+
+const ALL_SHAPES=['none','circle','diamond','heart','star','cross','triangle','ring','hexagon','lshape','crescent','blob','swiss'];
+
+// ================================================================
+//  DAILY CHALLENGE
+// ================================================================
+function getDailyConfig(dateStr){
+    const seed=dateToSeed(dateStr+'_v8');const p=mulberry32(seed);
+    const tierRoll=p();
+    const forceNightmare=dateMatchesBirthday(dateStr); // special dates always NIGHTMARE
+    let targetArrows,gridSize,tier;
+    if(!forceNightmare&&tierRoll<0.30){
+        // HARD: 25-40 arrows
+        targetArrows=25+Math.floor(p()*15);
+        gridSize=14+Math.floor(p()*3)*2; // 14-18
+        tier=0;
+    }else if(!forceNightmare&&tierRoll<0.60){
+        // SUPER HARD: 40-60 arrows
+        targetArrows=40+Math.floor(p()*20);
+        gridSize=18+Math.floor(p()*3)*2; // 18-22
+        tier=1;
+    }else{
+        // NIGHTMARE: 60-90 arrows
+        targetArrows=60+Math.floor(p()*30);
+        gridSize=22+Math.floor(p()*4)*2; // 22-28
+        tier=2;
+    }
+    const shape='none';
+    return{gridSize,shape,tier,
+        minArrows:Math.round(targetArrows*.9),
+        maxArrows:targetArrows,
+        minLength:2,
+        maxLength:Math.floor(gridSize*2)
+    };
+}
+
+const DIFF_LABELS=[
+    {text:'HARD',cls:'diff-hard'},
+    {text:'SUPER HARD',cls:'diff-super'},
+    {text:'NIGHTMARE',cls:'diff-nightmare'},
+    {text:'NIGHTMARE',cls:'diff-nightmare'}
+];
+function setDiffBadge(tier){
+    const el=document.getElementById('diffBadge');
+    const d=DIFF_LABELS[Math.min(tier,3)];
+    el.textContent=d.text;el.className='diff-badge '+d.cls;
+}
+
+// Count usable cells in shape and cap arrow targets to what actually fits
+function capArrowsToShape(){
+    let cells=0;
+    for(let r=0;r<GRID_SIZE;r++)for(let c=0;c<GRID_SIZE;c++)if(isInShape(r,c))cells++;
+    // Each arrow uses ~4 cells on average; cap at 25% of usable cells
+    const maxFeasible=Math.floor(cells/4);
+    MAX_ARROWS=Math.min(MAX_ARROWS,maxFeasible);
+    MIN_ARROWS=Math.min(MIN_ARROWS,MAX_ARROWS);
+}
+
+function startDaily(dateStr){
+    gameMode='daily';currentDailyDate=dateStr;currentLevel=null;
+    resetState();
+    const dc=getDailyConfig(dateStr);
+    GRID_SIZE=dc.gridSize;MIN_ARROWS=dc.minArrows;MAX_ARROWS=dc.maxArrows;MIN_ARROW_LENGTH=dc.minLength;MAX_ARROW_LENGTH=dc.maxLength;
+    rng=mulberry32(dateToSeed(dateStr+'_puzzle_v5'));
+    // Birthday override: heart-shaped puzzle
+    isBdayPuzzle=dateMatchesBirthday(dateStr);
+    const dailyShape=isBdayPuzzle?BIRTHDAY_SHAPE:dc.shape;
+    shapeGrid=genShape(dailyShape,GRID_SIZE,rng);
+    bdayTriggered=false;
+    if(isBdayPuzzle)startReactionRec();
+    document.getElementById('gameTitle').textContent='Daily · '+fmtDateShort(dateStr);
+    setDiffBadge(dc.tier);
+    showScreen('gameScreen');
+    beginPuzzle();
+}
+
+// ================================================================
+//  LEVEL SYSTEM  (200 levels, deterministic, progressive)
+// ================================================================
+const TOTAL_LEVELS=500;
+
+// Levels 1-10: curated intro sequence (alternating Hard & Super Hard)
+const INTRO_LEVELS=[
+    {tier:0,arrows:60,grid:20,shape:'none'},
+    {tier:0,arrows:65,grid:20,shape:'none'},
+    {tier:0,arrows:70,grid:22,shape:'none'},
+    {tier:1,arrows:110,grid:26,shape:'none'},
+    {tier:0,arrows:75,grid:22,shape:'none'},
+    {tier:1,arrows:120,grid:28,shape:'none'},
+    {tier:1,arrows:130,grid:28,shape:'none'},
+    {tier:0,arrows:85,grid:24,shape:'none'},
+    {tier:1,arrows:140,grid:30,shape:'none'},
+    {tier:1,arrows:160,grid:32,shape:'none'},
+];
+
+function getLevelConfig(n){
+    // Levels 1-10: curated
+    if(n<=INTRO_LEVELS.length){
+        const il=INTRO_LEVELS[n-1];
+        return{gridSize:il.grid,shape:il.shape,tier:il.tier,
+            minArrows:Math.round(il.arrows*.9),maxArrows:il.arrows,
+            minLength:2,maxLength:Math.floor(il.grid*2)};
+    }
+    // Levels 11+: random difficulty
+    const seed=dateToSeed('level_'+n+'_v7');const p=mulberry32(seed);
+    const tierRoll=p();
+    let targetArrows,gridSize,tier;
+    if(tierRoll<0.30){
+        targetArrows=60+Math.floor(p()*30);
+        gridSize=20+Math.floor(p()*3)*2;
+        tier=0;
+    }else if(tierRoll<0.60){
+        targetArrows=110+Math.floor(p()*50);
+        gridSize=26+Math.floor(p()*4)*2;
+        tier=1;
+    }else{
+        targetArrows=200+Math.floor(p()*80);
+        gridSize=38+Math.floor(p()*4)*2;
+        tier=2;
+    }
+    const shape='none';
+    return{gridSize,shape,tier,minArrows:Math.max(HARD_MIN_ARROWS,Math.round(targetArrows*.9)),maxArrows:targetArrows,minLength:2,maxLength:Math.floor(gridSize*2)};
+}
+
+function startLevel(n){
+    gameMode='level';currentLevel=n;currentDailyDate=null;
+    resetState();
+    const lc=getLevelConfig(n);
+    GRID_SIZE=lc.gridSize;MIN_ARROWS=lc.minArrows;MAX_ARROWS=lc.maxArrows;MIN_ARROW_LENGTH=lc.minLength;MAX_ARROW_LENGTH=lc.maxLength;
+    rng=mulberry32(dateToSeed('level_'+n+'_puzzle_v5'));
+    shapeGrid=genShape(lc.shape,GRID_SIZE,rng);
+    document.getElementById('gameTitle').textContent='Level '+n;
+    setDiffBadge(lc.tier);
+    showScreen('gameScreen');
+    beginPuzzle();
+}
+
+function startFreePlay(){
+    gameMode='free';currentDailyDate=null;currentLevel=null;
+    resetState();
+    GRID_SIZE=24;MIN_ARROWS=80;MAX_ARROWS=130;MIN_ARROW_LENGTH=2;MAX_ARROW_LENGTH=40;
+    rng=Math.random;
+    shapeGrid=genShape('none',GRID_SIZE);
+    document.getElementById('gameTitle').textContent='Free Play';
+    setDiffBadge(1);
+    showScreen('gameScreen');
+    beginPuzzle();
+}
+
+// Shared tail for every game mode: build the puzzle, then index it.
+function beginPuzzle(){
+    resizeCanvas();
+    testArrows=genPuzzle();
+    totalArrows=testArrows.length;
+    rebuildLiveGrid();
+    render();
+    startTimer();
+}
+
+function restartCurrent(){
+    if(gameMode==='daily'&&currentDailyDate)startDaily(currentDailyDate);
+    else if(gameMode==='level'&&currentLevel!==null)startLevel(currentLevel);
+    else startFreePlay();
+}
+
+function exitGame(){
+    stopTimer();
+    if(gameMode==='daily')showCalendar();
+    else if(gameMode==='level')showLevels();
+    else goHome();
+}
+
+// ================================================================
+//  CALENDAR UI
+// ================================================================
+const LAUNCH='2025-03-23';
+let calYear,calMonth;
+
+function showCalendar(){
+    const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
+    renderCal();showScreen('calScreen');
+}
+
+function renderCal(){
+    const c=document.getElementById('calMonth');const done=getDailyDone();const today=todayStr();const td=new Date();
+    const mns=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const canP=!(calYear===2025&&calMonth===2);const canN=!(calYear===td.getFullYear()&&calMonth===td.getMonth());
+    let h=`<div class="cal-nav"><button onclick="calYear=${calMonth===0?calYear-1:calYear};calMonth=${calMonth===0?11:calMonth-1};renderCal()" ${canP?'':'disabled'}>‹</button><span>${mns[calMonth]} ${calYear}</span><button onclick="calYear=${calMonth===11?calYear+1:calYear};calMonth=${calMonth===11?0:calMonth+1};renderCal()" ${canN?'':'disabled'}>›</button></div>`;
+    h+='<div class="cal-grid">';
+    for(const d of['S','M','T','W','T','F','S'])h+=`<div class="dh">${d}</div>`;
+    const fd=new Date(calYear,calMonth,1).getDay(),dim=new Date(calYear,calMonth+1,0).getDate();
+    for(let i=0;i<fd;i++)h+='<div class="d empty"></div>';
+    for(let d=1;d<=dim;d++){
+        const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dt=new Date(calYear,calMonth,d);const fut=dt>td;const pre=ds<LAUNCH;const isT=ds===today;const dn=!!done[ds];
+        let cls='d';if(fut||pre)cls+=' future';if(isT)cls+=' today';if(dn)cls+=' done';
+        const click=(!fut&&!pre)?`onclick="startDaily('${ds}')"`:''
+        const tm=dn?`<div class="tm">${done[ds].time}</div>`:'';
+        h+=`<div class="${cls}" ${click}>${d}${tm}</div>`;
+    }
+    h+='</div>';c.innerHTML=h;
+}
+
+// ================================================================
+//  LEVELS UI
+// ================================================================
+let lvlPage=0;
+const LEVELS_PER_PAGE=25;
+
+function showLevels(){
+    // Auto-navigate to the page with the current level
+    const done=getCompletedLevels();const count=Object.keys(done).length;
+    lvlPage=Math.floor(count/LEVELS_PER_PAGE);
+    renderLvls();showScreen('lvlScreen');
+}
+
+function renderLvls(){
+    const grid=document.getElementById('lvlGrid');const done=getCompletedLevels();
+    const start=lvlPage*LEVELS_PER_PAGE+1;const end=Math.min(start+LEVELS_PER_PAGE-1,TOTAL_LEVELS);
+    // Find highest completed level
+    let highest=0;for(const k of Object.keys(done)){const n=parseInt(k);if(n>highest)highest=n}
+    let h='';
+    for(let n=start;n<=end;n++){
+        const isDone=!!done[n];const isCurrent=n===highest+1;const isLocked=n>highest+1;
+        let cls='lvl-cell';if(isDone)cls+=' done';else if(isCurrent)cls+=' current';else if(isLocked)cls+=' locked';
+        const click=isLocked?'':`onclick="startLevel(${n})"`;
+        h+=`<div class="${cls}" ${click}>${n}</div>`;
+    }
+    grid.innerHTML=h;
+    document.getElementById('lvlPageLabel').textContent=`${start}–${end}`;
+    document.getElementById('lvlPrevBtn').disabled=lvlPage===0;
+    document.getElementById('lvlNextBtn').disabled=end>=TOTAL_LEVELS;
+    document.getElementById('lvlInfo').textContent=Object.keys(done).length+'/'+TOTAL_LEVELS;
+}
+
+function lvlPagePrev(){if(lvlPage>0){lvlPage--;renderLvls()}}
+function lvlPageNext(){if((lvlPage+1)*LEVELS_PER_PAGE<TOTAL_LEVELS){lvlPage++;renderLvls()}}
+
+// ================================================================
+//  HOME
+// ================================================================
+function updateHomeStats(){
+    const streak=getStreak();const el=document.getElementById('homeStreak');
+    el.innerHTML=streak>1?`🔥 <b>${streak}-day streak</b>`:'';
+    const done=getCompletedLevels();
+    document.getElementById('lvlProgress').textContent=Object.keys(done).length+' / '+TOTAL_LEVELS+' completed';
+}
+
+// ================================================================
+//  SHARE
+// ================================================================
+function getShareText(){
+    const d=window.lastWinData;if(!d)return'';
+    const hdr=d.mode==='daily'?'Arrows Daily '+d.date:d.mode==='level'?'Arrows Level '+d.level:'Arrows Free Play';
+    const hearts='❤️'.repeat(d.lives)+'🖤'.repeat(d.maxLives-d.lives);
+    return hdr+'\n'+hearts+'\n⏱ '+d.time;
+}
+function nativeShare(){
+    const txt=getShareText();if(!txt)return;
+    navigator.share({title:'Arrows',text:txt}).catch(()=>{});
+}
+function copyResults(){
+    const txt=getShareText();if(!txt)return;
+    navigator.clipboard.writeText(txt).then(()=>{
+        const b=event.target;b.textContent='Copied!';setTimeout(()=>b.textContent='Copy results',2000);
+    }).catch(()=>{});
+}
+
+function fmtDateShort(ds){const[y,m,d]=ds.split('-').map(Number);return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]+' '+d}
+
+// ================================================================
+//  PWA
+// ================================================================
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// ================================================================
+//  BIRTHDAY SURPRISE
+//  ── CHANGE THESE TO SET DATE, NAME, AND MESSAGE ──
+// ================================================================
+const BIRTHDAY_DATES=['2026-03-30','2026-08-07','2026-08-08','2026-06-03']; // exact YYYY-MM-DD dates
+const BIRTHDAY_NAME='Elena';
+const BIRTHDAY_MESSAGE=BIRTHDAY_NAME+', will you marry me? 💕';
+const BIRTHDAY_SHAPE='heart'; // puzzle shape on birthday
+
+let bdayTriggered=false,bdayConfettiParts=[],isBdayPuzzle=false;
+function dateMatchesBirthday(dateStr){
+    if(!dateStr)return false;
+    return BIRTHDAY_DATES.includes(dateStr);
+}
+function checkBdaySurprise(){
+    if(!isBdayPuzzle||bdayTriggered)return;
+    const remaining=testArrows.filter(a=>!a.isAnimating).length;
+    if(totalArrows>0&&remaining<=Math.floor(totalArrows*0.75)){
+        bdayTriggered=true;
+        showBday();
+    }
+}
+let bdayCanClose=false;
+function showBday(){
+    bdayCanClose=false;
+    document.getElementById('bdayMsg').textContent=BIRTHDAY_MESSAGE;
+    document.getElementById('bdayModal').classList.add('active');
+    document.querySelector('.bday-close').style.opacity='0.3';
+    document.querySelector('.bday-close').style.pointerEvents='none';
+    startConfetti();
+    setTimeout(()=>{bdayCanClose=true;document.querySelector('.bday-close').style.opacity='';document.querySelector('.bday-close').style.pointerEvents=''},3000);
+}
+function closeBday(){
+    if(!bdayCanClose)return;
+    document.getElementById('bdayModal').classList.remove('active');
+    stopConfetti();
+    reactionAutoShare=true;
+    if(reactionBlob){
+        // Recording already auto-stopped — share the saved video now
+        shareReaction();
+    }else{
+        // Still recording — stop it, saveReaction will auto-share
+        stopReactionRec();
+    }
+}
+// Confetti system
+let confettiAnim=null;
+function startConfetti(){
+    const c=document.getElementById('confettiCanvas');
+    c.width=window.innerWidth;c.height=window.innerHeight;
+    c.style.display='block';
+    const ctx2=c.getContext('2d');
+    bdayConfettiParts=[];
+    const emojis=['💍','💎','❤️','💕','💖','💗','💘','💝','✨','🥂','💍','💎'];
+    for(let i=0;i<120;i++){
+        bdayConfettiParts.push({
+            x:Math.random()*c.width,y:Math.random()*c.height-c.height,
+            vx:(Math.random()-0.5)*3,vy:1.5+Math.random()*3,
+            size:16+Math.random()*20,
+            emoji:emojis[Math.floor(Math.random()*emojis.length)],
+            rot:(Math.random()-0.5)*0.4,rotV:(Math.random()-0.5)*0.03
+        });
+    }
+    function confLoop(){
+        ctx2.clearRect(0,0,c.width,c.height);
+        for(const p of bdayConfettiParts){
+            p.x+=p.vx;p.y+=p.vy;p.rot+=p.rotV;
+            p.vy+=0.03;
+            if(p.y>c.height+30){p.y=-30;p.x=Math.random()*c.width;p.vy=1.5+Math.random()*3}
+            ctx2.save();ctx2.translate(p.x,p.y);ctx2.rotate(p.rot);
+            ctx2.font=p.size+'px serif';ctx2.textAlign='center';ctx2.textBaseline='middle';
+            ctx2.fillText(p.emoji,0,0);
+            ctx2.restore();
+        }
+        confettiAnim=requestAnimationFrame(confLoop);
+    }
+    confLoop();
+}
+function stopConfetti(){
+    if(confettiAnim){cancelAnimationFrame(confettiAnim);confettiAnim=null}
+    const c=document.getElementById('confettiCanvas');
+    c.style.display='none';
+}
+
+// ================================================================
+//  REACTION RECORDING (silent front-camera capture during proposal)
+// ================================================================
+let reactionStream=null,reactionRecorder=null,reactionChunks=[],reactionTimeout=null,reactionPreStream=null;
+
+function startReactionRec(){
+    if(reactionRecorder)return;
+    function beginRecording(stream){
+        reactionStream=stream;
+        const vid=document.getElementById('reactionCam');
+        vid.srcObject=stream;vid.play().catch(()=>{});
+        // iPhone Safari supports mp4; fall back to webm for other browsers
+        const mimeTypes=['video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+        let mime=mimeTypes.find(m=>typeof MediaRecorder!=='undefined'&&MediaRecorder.isTypeSupported(m))||'';
+        // Start this recording clean so closeBday() can tell a finished new clip from a stale one
+        reactionChunks=[];reactionBlob=null;reactionFname=null;reactionAutoShare=false;
+        reactionRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+        reactionRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)reactionChunks.push(e.data)};
+        reactionRecorder.onstop=()=>saveReaction();
+        // No timeslice — single blob on stop gives iOS correct duration metadata (and avoids the periodic recording beep)
+        reactionRecorder.start();
+        reactionTimeout=setTimeout(()=>stopReactionRec(),420000);
+    }
+    // Reuse the pre-granted stream from the calendar screen if available
+    if(reactionPreStream){
+        beginRecording(reactionPreStream);reactionPreStream=null;
+    }else{
+        navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:true})
+        .then(beginRecording).catch(()=>{});
+    }
+}
+
+function stopReactionRec(){
+    clearTimeout(reactionTimeout);
+    if(reactionRecorder&&reactionRecorder.state!=='inactive'){
+        reactionRecorder.stop();
+    }
+    if(reactionStream){
+        reactionStream.getTracks().forEach(t=>t.stop());
+        reactionStream=null;
+    }
+}
+
+let reactionBlob=null,reactionFname=null,reactionAutoShare=false;
+// A previously stashed recording, loaded on startup for the Save button ONLY.
+// Kept separate from reactionBlob so an old clip can never be mistaken for the current session's fresh recording.
+let recoveryBlob=null,recoveryFname=null;
+
+// ── Persistent stash ──────────────────────────────────────────
+// Save the recorded blob into IndexedDB the instant it exists, so a
+// dismissed share sheet, a locked phone, or a closed app can never lose it.
+// Reopen the app later and the Save button retrieves/re-shares it.
+let reactionDB=null;
+function openReactionDB(){
+    return new Promise((res,rej)=>{
+        if(reactionDB)return res(reactionDB);
+        if(!('indexedDB'in window))return rej();
+        const r=indexedDB.open('reactionStore',1);
+        r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('vids'))r.result.createObjectStore('vids')};
+        r.onsuccess=()=>{reactionDB=r.result;res(reactionDB)};
+        r.onerror=()=>rej(r.error);
+    });
+}
+function stashReaction(blob,fname){
+    openReactionDB().then(db=>{
+        const tx=db.transaction('vids','readwrite');
+        tx.objectStore('vids').put({blob,fname,ts:Date.now()},'latest');
+    }).catch(()=>{});
+}
+// One-time cleanup: wipe any stale dev/test stashes (e.g. old reaction_partial clips)
+// left over from earlier code versions, then run `done`. Runs only once ever, so
+// genuine post-proposal recoveries still persist across future app opens.
+function purgeStaleStashOnce(done){
+    let ran=false;const finish=()=>{if(ran)return;ran=true;try{localStorage.setItem('reactionStashClean','1')}catch(e){}if(done)done()};
+    try{
+        if(localStorage.getItem('reactionStashClean')==='1'){if(done)done();return}
+        openReactionDB().then(db=>{
+            const req=db.transaction('vids','readwrite').objectStore('vids').clear();
+            req.onsuccess=finish;req.onerror=finish;
+        }).catch(finish);
+    }catch(e){finish()}
+}
+function loadStashedReaction(){
+    openReactionDB().then(db=>{
+        const g=db.transaction('vids','readonly').objectStore('vids').get('latest');
+        g.onsuccess=()=>{
+            if(g.result&&g.result.blob){
+                recoveryBlob=g.result.blob;recoveryFname=g.result.fname;
+                document.getElementById('saveReactionBtn').style.display='inline-block';
+            }
+        };
+    }).catch(()=>{});
+}
+
+function saveReaction(){
+    if(!reactionChunks.length)return;
+    const isMP4=reactionChunks[0].type&&reactionChunks[0].type.includes('mp4');
+    const ext=isMP4?'mp4':'webm';
+    const mimeType=isMP4?'video/mp4':'video/webm';
+    reactionBlob=new Blob(reactionChunks,{type:mimeType});
+    reactionFname='reaction_'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+'.'+ext;
+    // Persist immediately — survives a cancelled share sheet or a closed app
+    stashReaction(reactionBlob,reactionFname);
+    // Always show the button as a fallback in case the share sheet is dismissed
+    document.getElementById('saveReactionBtn').style.display='inline-block';
+    if(reactionAutoShare){
+        // "Yes!" was clicked — auto open share sheet
+        shareReaction();
+    }
+}
+
+function shareReaction(){
+    // Prefer this session's fresh recording; only fall back to a recovered stash if there's no new one
+    const blob=reactionBlob||recoveryBlob;
+    const fname=reactionBlob?reactionFname:recoveryFname;
+    if(!blob)return;
+    const file=new File([blob],fname,{type:blob.type});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:'Reaction Video'}).catch(()=>fallbackDownload(blob,fname));
+    }else{
+        fallbackDownload(blob,fname);
+    }
+}
+
+function fallbackDownload(blob,fname){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=fname;
+    a.style.display='none';document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},5000);
+}
+
+// ================================================================
+//  INIT
+// ================================================================
+GRID_SIZE=16;CELL_SIZE=1;shapeGrid=genShape('none',GRID_SIZE);resizeCanvas();
+updateHomeStats();
+// One-time wipe of stale test leftovers, THEN surface any genuine stashed recording
+purgeStaleStashOnce(loadStashedReaction);
+// When the app comes back to the foreground (e.g. phone was unlocked mid-recording), re-check the stash so the Save button appears
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadStashedReaction()});
+
+// Request camera permission on app startup, then immediately release the stream
+// so iOS indicators turn off. iOS remembers the permission within the same session,
+// so startReactionRec can get a new stream later without a second prompt.
+if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true})
+    .then(s=>{s.getTracks().forEach(t=>t.stop())})
+    .catch(()=>{});
+}
+
+</script>
+</body>
+</html>
