@@ -888,8 +888,8 @@ let shakeAmount=0,shakeDecay=0;
 function triggerShake(){shakeAmount=isTouch?Math.max(2,CELL_SIZE*0.08):Math.max(3,CELL_SIZE*0.12);shakeDecay=Date.now()}
 
 function drawGridDots(){
-    ctx.fillStyle='rgba(0,0,0,0.06)';
-    const r=Math.max(1,CELL_SIZE*0.04);
+    ctx.fillStyle='rgba(0,0,0,0.14)';
+    const r=Math.max(1.25,CELL_SIZE*0.05);
     for(let row=0;row<GRID_SIZE;row++){
         for(let col=0;col<GRID_SIZE;col++){
             if(!isInShape(row,col))continue;
